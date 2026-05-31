@@ -121,8 +121,32 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.2.0"
-  firebase_core:
+  firebase_auth:
+    dependency: "direct main"
+    description:
+      name: firebase_auth
+      sha256: "2df96699cf10c6125a33059f33100daff539906195bccaced7cb0002bdeb860e"
+      url: "https://pub.dev"
+    source: hosted
+    version: "6.5.1"
+  firebase_auth_platform_interface:
     dependency: transitive
+    description:
+      name: firebase_auth_platform_interface
+      sha256: f37e163b063edbb62b911f100edb4546b10ca06857f879f5c3eb8d9cb19c275b
+      url: "https://pub.dev"
+    source: hosted
+    version: "9.0.1"
+  firebase_auth_web:
+    dependency: transitive
+    description:
+      name: firebase_auth_web
+      sha256: "82fdbe2126b2dd6b8635fb091e7c86bebc58ef5d7da350d623b47a8685dd0947"
+      url: "https://pub.dev"
+    source: hosted
+    version: "6.2.1"
+  firebase_core:
+    dependency: "direct main"
     description:
       name: firebase_core
       sha256: "93a5bde9775fd5adcc937f39dfa04ae0bc89c4d79bea6abc49de3f7b049d9ff6"
@@ -168,6 +192,14 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
+  go_router:
+    dependency: "direct main"
+    description:
+      name: go_router
+      sha256: f02fd7d2a4dc512fec615529824fdd217fecb3a3d3de68360293a551f21634b3
+      url: "https://pub.dev"
+    source: hosted
+    version: "14.8.1"
   google_fonts:
     dependency: "direct main"
     description:
@@ -280,6 +312,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.17.0"
+  nested:
+    dependency: transitive
+    description:
+      name: nested
+      sha256: "03bac4c528c64c95c722ec99280375a6f2fc708eec17c7b3f07253b626cd2a20"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.0"
   objective_c:
     dependency: transitive
     description:
@@ -368,6 +408,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.1.8"
+  provider:
+    dependency: "direct main"
+    description:
+      name: provider
+      sha256: "4e82183fa20e5ca25703ead7e05de9e4cceed1fbd1eadc1ac3cb6f565a09f272"
+      url: "https://pub.dev"
+    source: hosted
+    version: "6.1.5+1"
   pub_semver:
     dependency: transitive
     description:

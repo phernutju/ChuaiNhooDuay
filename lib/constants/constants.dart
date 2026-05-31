@@ -1,11 +1,44 @@
 import 'package:flutter/material.dart';
 
+/// App-wide brand identity.
+class AppInfo {
+  AppInfo._();
+
+  static const String appName = 'VolunteerReady';
+  static const String tagline = 'CRISIS NETWORK · ALWAYS ON';
+  static const String defaultDialCode = '+66';
+}
+
+/// Firestore collection names.
+class FirestoreCollections {
+  FirestoreCollections._();
+
+  static const String users = 'users';
+  static const String requests = 'requests';
+  static const String messages = 'messages';
+  static const String civilianNotifications = 'civilianNotifications';
+  static const String volunteerNotifications = 'volunteerNotifications';
+  static const String globalNotifications = 'globalNotifications';
+}
+
+/// go_router path constants.
+class AppRoutes {
+  AppRoutes._();
+
+  static const String phone = '/';
+  static const String verify = '/verify';
+  static const String name = '/name';
+  static const String role = '/role';
+  static const String home = '/home';
+}
+
 class AppColors {
   AppColors._();
 
   static const Color background = Color(0xFF0F1115);
   static const Color surface = Color(0xFF1A1E26);
   static const Color surfaceElevated = Color(0xFF22272F);
+  static const Color surfaceAlt = Color(0xFF1B1E27);
   static const Color border = Color(0xFF2C3340);
 
   static const Color textPrimary = Color(0xFFFFFFFF);
@@ -24,7 +57,12 @@ class AppColors {
   static const Color successBg = Color(0xFF1A3320);
 
   static const Color primary = Color(0xFFE04040);
+  static const Color primaryDisabled = Color(0xFF2E335C);
   static const Color primaryAccepted = Color(0xFF4CAF50);
+
+  static const Color brand = Color(0xFFF2683C);
+  static const Color volunteer = Color(0xFF34C759);
+  static const Color requester = Color(0xFFFF453A);
 }
 
 class AppSpacing {
