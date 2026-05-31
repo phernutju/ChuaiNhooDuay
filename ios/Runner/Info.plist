@@ -2,6 +2,13 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<!-- geolocator: shown in system permission dialog -->
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>We Are Ready needs your location to show disaster relief requests near you.</string>
+	<!-- geolocator: required alongside WhenInUse on iOS 11+ -->
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>We Are Ready needs your location to show disaster relief requests near you.</string>
+
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
 	<key>CFBundleDevelopmentRegion</key>
