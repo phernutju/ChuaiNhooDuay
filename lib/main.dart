@@ -1,8 +1,18 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'providers/map_provider.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';            // เพิ่ม
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import '../models/request_model.dart';
+import '../features/map/nearby_requests_map.dart';
+import '../features/map/pick_location_map.dart';
+import '../utils/google_maps_loader.dart';                       // เพิ่ม
+import 'package:provider/provider.dart';                        // เพิ่ม
+import '../providers/map_provider.dart';                          // เพิ่ม
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await dotenv.load(fileName: '.env');
+  await loadGoogleMaps(dotenv.env['MAPS_API_KEY'] ?? '');
   runApp(
     MultiProvider(
       providers: [
@@ -100,6 +110,7 @@ class _MyHomePageState extends State<MyHomePage> {
         child: Column(
           // Column is also a layout widget. It takes a list of children and
           // arranges them vertically. By default, it sizes itself to fit its
+          
           // children horizontally, and tries to be as tall as its parent.
           //
           // Column has various properties to control how it sizes itself and

@@ -1,13 +1,22 @@
 // lib/dev/map_preview.dart — ไฟล์เทสต์ชั่วคราว
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../models/request_model.dart';
 import '../features/map/nearby_requests_map.dart';
 import '../features/map/pick_location_map.dart';
+import '../utils/google_maps_loader.dart';
 
-void main() => runApp(const MaterialApp(home: MapPreview()));
+// แก้ main() ให้ async
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await dotenv.load(fileName: '.env');
+  await loadGoogleMaps(dotenv.env['MAPS_API_KEY'] ?? '');
+  runApp(const MaterialApp(home: MapPreview()));
+}
 
+// ที่เหลือเหมือนเดิมทุกอย่าง
 RequestModel _mock(String id, String title, double lat, double lng,
     UrgencyLevel u, int max, int assigned) =>
     RequestModel(
@@ -26,9 +35,9 @@ RequestModel _mock(String id, String title, double lat, double lng,
     );
 
 final mock = [
-  _mock('1', 'ยกของ', 13.7563, 100.5018, UrgencyLevel.critical, 5, 0),   // แดง
-  _mock('2', 'ปฐมพยาบาล', 13.760, 100.510, UrgencyLevel.urgent, 3, 1),    // ส้ม
-  _mock('3', 'แจกอาหาร (เต็ม)', 13.740, 100.490, UrgencyLevel.general, 2, 2), // เต็ม -> ไม่ขึ้น
+  _mock('1', 'ยกของ', 13.7563, 100.5018, UrgencyLevel.critical, 5, 0),
+  _mock('2', 'ปฐมพยาบาล', 13.760, 100.510, UrgencyLevel.urgent, 3, 1),
+  _mock('3', 'แจกอาหาร (เต็ม)', 13.740, 100.490, UrgencyLevel.general, 2, 2),
 ];
 
 class MapPreview extends StatelessWidget {
