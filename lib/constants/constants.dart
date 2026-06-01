@@ -65,6 +65,12 @@ class AppColors {
   static const Color requester = Color(0xFFFF453A);
 }
 
+class AppConstants {
+  AppConstants._();
+
+  static const double checkInRadiusMeters = 100;
+}
+
 class AppSpacing {
   AppSpacing._();
 

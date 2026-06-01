@@ -1,9 +1,33 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:we_are_ready/constants/constants.dart';
+import 'package:we_are_ready/features/map/nearby_requests_map.dart';
 import 'package:we_are_ready/features/request_detail/mock/request_mock_data.dart';
 import 'package:we_are_ready/widgets/role_pill.dart';
 import 'package:we_are_ready/widgets/role_switch_sheet.dart';
 import 'package:we_are_ready/models/request_model.dart';
+
+RequestModel _toRequestModel(RequestDetailData data) {
+  return RequestModel(
+    id: data.id,
+    createdBy: '',
+    title: data.title,
+    location: RequestLocation(
+      address: data.requesterLocation,
+      coordinates: GeoPoint(data.lat, data.lng),
+    ),
+    requestType: RequestType.other,
+    urgencyLevel: data.urgencyLevel,
+    urgencyScore: 1,
+    maxVolunteer: 1,
+    assignedVolunteerIds: const [],
+    status: RequestStatus.open,
+    createdAt: DateTime.now(),
+    updatedAt: DateTime.now(),
+  );
+}
 
 Color _avatarColorFromName(String name) {
   const colors = [
@@ -14,7 +38,7 @@ Color _avatarColorFromName(String name) {
     Color(0xFF00BCD4),
     Color(0xFFE91E63),
   ];
-  final hash = name.codeUnits.fold(0, (sum, e) => sum + e);
+  final hash = name.codeUnits.fold(0, (acc, e) => acc + e);
   return colors[hash % colors.length];
 }
 
@@ -29,10 +53,19 @@ class RequestDetailScreen extends StatefulWidget {
 
 class _RequestDetailScreenState extends State<RequestDetailScreen> {
   bool _accepted = false;
+  bool _checkedIn = false;
   RoleType _currentRole = RoleType.volunteer;
 
   static const _appBarTitle = 'Request';
   static const _snackBarMsg = "You're helping!";
+  static const _arrivedMsg = "You've arrived!";
+  static const _permissionDeniedMsg = 'Location permission needed to check in';
+  static const _permissionForeverMsg = 'Location permission is permanently denied';
+  static const _locationErrorMsg = 'Could not get your location — try again';
+  static const _openSettingsLabel = 'Open Settings';
+
+  static String _tooFarMsg(int dist, int radius) =>
+      "You're ${dist}m away — get within ${radius}m to check in";
 
   void _onHelp() {
     setState(() => _accepted = true);
@@ -43,6 +76,90 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
         duration: Duration(seconds: 2),
       ),
     );
+  }
+
+  Future<void> _onCheckIn() async {
+    LocationPermission permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+    }
+    if (!mounted) return;
+
+    // Case C — permanently denied: offer settings shortcut
+    if (permission == LocationPermission.deniedForever) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text(_permissionForeverMsg),
+          backgroundColor: AppColors.critical,
+          action: SnackBarAction(
+            label: _openSettingsLabel,
+            textColor: AppColors.textPrimary,
+            onPressed: Geolocator.openAppSettings,
+          ),
+        ),
+      );
+      return;
+    }
+
+    // Case B — denied once: user can tap again to re-request
+    if (permission == LocationPermission.denied) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(_permissionDeniedMsg),
+          backgroundColor: AppColors.critical,
+        ),
+      );
+      return;
+    }
+
+    // Case D — location services off or any platform error
+    Position position;
+    try {
+      position = await Geolocator.getCurrentPosition();
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(_locationErrorMsg),
+          backgroundColor: AppColors.critical,
+        ),
+      );
+      return;
+    }
+    if (!mounted) return;
+
+    final distanceMeters = Geolocator.distanceBetween(
+      position.latitude,
+      position.longitude,
+      widget.request.lat,
+      widget.request.lng,
+    );
+
+    if (distanceMeters <= AppConstants.checkInRadiusMeters) {
+      // Success
+      setState(() => _checkedIn = true);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(_arrivedMsg),
+          backgroundColor: AppColors.success,
+          duration: Duration(seconds: 2),
+        ),
+      );
+    } else {
+      // Case A — too far: button stays tappable, user can walk closer
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            _tooFarMsg(
+              distanceMeters.round(),
+              AppConstants.checkInRadiusMeters.toInt(),
+            ),
+          ),
+          backgroundColor: AppColors.critical,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    }
   }
 
   void _showRoleSheet() {
@@ -112,7 +229,7 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
                   const SizedBox(height: AppSpacing.md),
                   _TitleSection(request: request),
                   const SizedBox(height: AppSpacing.md),
-                  const _MapPlaceholder(),
+                  _MapPlaceholder(request: request),
                   const SizedBox(height: AppSpacing.md),
                   _RequesterCard(request: request),
                   const SizedBox(height: AppSpacing.md),
@@ -124,7 +241,9 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
           ),
           _BottomBar(
             accepted: _accepted,
+            checkedIn: _checkedIn,
             onHelp: _onHelp,
+            onCheckIn: _onCheckIn,
           ),
         ],
       ),
@@ -201,60 +320,58 @@ class _TitleSection extends StatelessWidget {
 }
 
 class _MapPlaceholder extends StatelessWidget {
-  const _MapPlaceholder();
+  const _MapPlaceholder({required this.request});
+
+  final RequestDetailData request;
 
   static const _caption = 'Approximate area shown for safety';
   static const _youLabel = 'YOU';
 
   @override
   Widget build(BuildContext context) {
-    // TODO: replace with MapWidget from Feature E (Shayanis)
-    // MapWidget(lat: request.lat, lng: request.lng)
-    return Container(
+    return SizedBox(
       height: 180,
-      decoration: BoxDecoration(
-        color: AppColors.surfaceElevated,
+      child: ClipRRect(
         borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
-      ),
-      child: Stack(
-        children: [
-          const Center(
-            child: Icon(
-              Icons.location_pin,
-              color: AppColors.critical,
-              size: 40,
+        child: Stack(
+          children: [
+            NearbyRequestsMap(
+              center: LatLng(request.lat, request.lng),
+              radiusKm: 0.3,
+              requests: [_toRequestModel(request)],
             ),
-          ),
-          Positioned(
-            bottom: AppSpacing.sm,
-            left: AppSpacing.md,
-            right: AppSpacing.md,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(_caption, style: AppTextStyles.caption),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.sm,
-                    vertical: 2,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.success,
-                    borderRadius: BorderRadius.circular(AppSpacing.radiusPill),
-                  ),
-                  child: const Text(
-                    _youLabel,
-                    style: TextStyle(
-                      color: AppColors.textPrimary,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w700,
+            Positioned(
+              bottom: AppSpacing.sm,
+              left: AppSpacing.md,
+              right: AppSpacing.md,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(_caption, style: AppTextStyles.caption),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.sm,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.success,
+                      borderRadius:
+                          BorderRadius.circular(AppSpacing.radiusPill),
+                    ),
+                    child: const Text(
+                      _youLabel,
+                      style: TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -436,16 +553,38 @@ class _SkillChip extends StatelessWidget {
 }
 
 class _BottomBar extends StatelessWidget {
-  const _BottomBar({required this.accepted, required this.onHelp});
+  const _BottomBar({
+    required this.accepted,
+    required this.checkedIn,
+    required this.onHelp,
+    required this.onCheckIn,
+  });
 
   final bool accepted;
+  final bool checkedIn;
   final VoidCallback onHelp;
+  final VoidCallback onCheckIn;
 
-  static const _acceptedLabel = '✓  Accepted';
+  static const _helpLabel = "I'll help";
+  static const _checkInLabel = 'Check in';
+  static const _checkedInLabel = 'Checked in';
 
   @override
   Widget build(BuildContext context) {
     final bottomInset = MediaQuery.of(context).padding.bottom;
+
+    final Color btnColor = checkedIn
+        ? AppColors.successBg
+        : accepted
+            ? AppColors.primaryAccepted
+            : AppColors.primary;
+
+    final VoidCallback? tapAction = checkedIn
+        ? null
+        : accepted
+            ? onCheckIn
+            : onHelp;
+
     return Container(
       padding: EdgeInsets.fromLTRB(
         AppSpacing.md,
@@ -480,34 +619,58 @@ class _BottomBar extends StatelessWidget {
           const SizedBox(width: AppSpacing.sm),
           Expanded(
             child: GestureDetector(
-              onTap: accepted ? null : onHelp,
+              onTap: tapAction,
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 300),
                 height: 48,
                 decoration: BoxDecoration(
-                  color: accepted
-                      ? AppColors.primaryAccepted
-                      : const Color(0xFFE8453C),
+                  color: btnColor,
                   borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
                 ),
                 child: Center(
                   child: AnimatedSwitcher(
                     duration: const Duration(milliseconds: 200),
-                    child: accepted
-                        ? Text(
-                            _acceptedLabel,
-                            key: const ValueKey(true),
-                            style: AppTextStyles.button,
-                          )
-                        : Row(
-                            key: const ValueKey(false),
+                    child: checkedIn
+                        ? Row(
+                            key: const ValueKey(2),
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Icon(Icons.volunteer_activism, color: Colors.white, size: 20),
+                              const Icon(
+                                Icons.check_circle,
+                                color: Colors.white,
+                                size: 20,
+                              ),
                               const SizedBox(width: AppSpacing.sm),
-                              Text("I'll help", style: AppTextStyles.button),
+                              Text(_checkedInLabel, style: AppTextStyles.button),
                             ],
-                          ),
+                          )
+                        : accepted
+                            ? Row(
+                                key: const ValueKey(1),
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(
+                                    Icons.location_pin,
+                                    color: Colors.white,
+                                    size: 20,
+                                  ),
+                                  const SizedBox(width: AppSpacing.sm),
+                                  Text(_checkInLabel, style: AppTextStyles.button),
+                                ],
+                              )
+                            : Row(
+                                key: const ValueKey(0),
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(
+                                    Icons.volunteer_activism,
+                                    color: Colors.white,
+                                    size: 20,
+                                  ),
+                                  const SizedBox(width: AppSpacing.sm),
+                                  Text(_helpLabel, style: AppTextStyles.button),
+                                ],
+                              ),
                   ),
                 ),
               ),

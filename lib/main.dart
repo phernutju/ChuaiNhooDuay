@@ -1,10 +1,11 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
-
 import 'constants/constants.dart';
+import 'utils/google_maps_loader.dart';
 import 'features/widgets/app_widgets.dart';
 import 'firebase_options.dart';
 import 'providers/providers.dart';
@@ -15,6 +16,8 @@ Future<void> main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+  await dotenv.load(fileName: '.env');
+  await loadGoogleMaps(dotenv.env['MAPS_API_KEY'] ?? '');
   runApp(const VolunteerReadyApp());
 }
 

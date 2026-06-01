@@ -13,6 +13,8 @@ class RequestDetailData {
   final bool isVerified;
   final String description;
   final List<String> skillsNeeded;
+  final double lat;
+  final double lng;
 
   const RequestDetailData({
     required this.id,
@@ -27,6 +29,8 @@ class RequestDetailData {
     required this.isVerified,
     required this.description,
     required this.skillsNeeded,
+    required this.lat,
+    required this.lng,
   });
 }
 
@@ -45,6 +49,8 @@ const mockRequest1 = RequestDetailData(
   description:
       'My mother slipped in the alley near the market. She is conscious but cannot stand. I called 1669 — ETA 9 minutes. Just need a calm person to wait with us. Thank you.',
   skillsNeeded: ['First aid', 'Lift assist'],
+  lat: 13.8021,
+  lng: 100.5567,
 );
 
 const mockRequest2 = RequestDetailData(
@@ -61,6 +67,8 @@ const mockRequest2 = RequestDetailData(
   description:
       'We have two young children (ages 3 and 6). Our home is flooded and we have nowhere to go tonight. Please help us find a safe place to stay.',
   skillsNeeded: ['Shelter', 'Transport'],
+  lat: 13.8116,
+  lng: 100.5502,
 );
 
 const mockRequest3 = RequestDetailData(
@@ -77,6 +85,8 @@ const mockRequest3 = RequestDetailData(
   description:
       'Around 30 evacuees are sheltering at the temple hall. We have run low on drinking water — 12 large bottles would cover tonight. Drop-off at the side gate is easiest.',
   skillsNeeded: ['Supplies', 'Transport'],
+  lat: 13.7980,
+  lng: 100.5590,
 );
 
 const mockRequest4 = RequestDetailData(
@@ -93,6 +103,8 @@ const mockRequest4 = RequestDetailData(
   description:
       'My elderly neighbour ran out of insulin and cannot leave the building. The pharmacy on the main road has stock — someone able to collect and deliver it would be a huge help.',
   skillsNeeded: ['Errand', 'Transport'],
+  lat: 13.8060,
+  lng: 100.5545,
 );
 
 const mockRequest5 = RequestDetailData(
@@ -109,6 +121,8 @@ const mockRequest5 = RequestDetailData(
   description:
       'We are staying with relatives after evacuating and have run out of formula and diapers for our infant. Any size 3 diapers or stage-1 formula would help enormously.',
   skillsNeeded: ['Supplies'],
+  lat: 13.8100,
+  lng: 100.5630,
 );
 
 /// Seed data for the "Nearby Requests" volunteer feed. Counts are tuned so the
