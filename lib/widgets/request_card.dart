@@ -33,15 +33,26 @@ bool _isSupplyRequest(String category) {
 /// Renders a [RequestDetailData] as a tappable card: severity badge,
 /// distance/elapsed meta, category, title, requester chip, and a context-aware
 /// action button (red "Respond" for on-site help, outlined "View" for supplies).
+///
+/// [onTap] fires when the card body is tapped (open detail). [onRespond], when
+/// provided, fires instead for the action button so the feed can "join" the
+/// request; it falls back to [onTap] when omitted.
 class RequestCard extends StatelessWidget {
-  const RequestCard({super.key, required this.request, required this.onTap});
+  const RequestCard({
+    super.key,
+    required this.request,
+    required this.onTap,
+    this.onRespond,
+  });
 
   final RequestDetailData request;
   final VoidCallback onTap;
+  final VoidCallback? onRespond;
 
   @override
   Widget build(BuildContext context) {
     final isRespond = !_isSupplyRequest(request.category);
+    final actionTap = onRespond ?? onTap;
 
     return GestureDetector(
       onTap: onTap,
@@ -93,8 +104,8 @@ class RequestCard extends StatelessWidget {
                 _RequesterChip(request: request),
                 const SizedBox(width: AppSpacing.sm),
                 isRespond
-                    ? _RespondButton(onTap: onTap)
-                    : _ViewButton(onTap: onTap),
+                    ? _RespondButton(onTap: actionTap)
+                    : _ViewButton(onTap: actionTap),
               ],
             ),
           ],

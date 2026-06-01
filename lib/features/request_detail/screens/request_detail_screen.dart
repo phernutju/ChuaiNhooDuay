@@ -1,10 +1,13 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:we_are_ready/constants/constants.dart';
 import 'package:we_are_ready/features/map/nearby_requests_map.dart';
+import 'package:we_are_ready/features/widgets/app_widgets.dart';
+import 'package:we_are_ready/utils/check_in_service.dart';
 import 'package:we_are_ready/features/request_detail/mock/request_mock_data.dart';
+import 'package:provider/provider.dart';
+import 'package:we_are_ready/providers/providers.dart';
 import 'package:we_are_ready/widgets/role_pill.dart';
 import 'package:we_are_ready/widgets/role_switch_sheet.dart';
 import 'package:we_are_ready/models/request_model.dart';
@@ -52,23 +55,15 @@ class RequestDetailScreen extends StatefulWidget {
 }
 
 class _RequestDetailScreenState extends State<RequestDetailScreen> {
-  bool _accepted = false;
   bool _checkedIn = false;
   RoleType _currentRole = RoleType.volunteer;
 
   static const _appBarTitle = 'Request';
   static const _snackBarMsg = "You're helping!";
   static const _arrivedMsg = "You've arrived!";
-  static const _permissionDeniedMsg = 'Location permission needed to check in';
-  static const _permissionForeverMsg = 'Location permission is permanently denied';
-  static const _locationErrorMsg = 'Could not get your location — try again';
-  static const _openSettingsLabel = 'Open Settings';
-
-  static String _tooFarMsg(int dist, int radius) =>
-      "You're ${dist}m away — get within ${radius}m to check in";
-
+  /// The single place a request joins the volunteer's Active list.
   void _onHelp() {
-    setState(() => _accepted = true);
+    context.read<JoinedRequestsProvider>().join(widget.request);
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text(_snackBarMsg),
@@ -78,88 +73,31 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
     );
   }
 
-  Future<void> _onCheckIn() async {
-    LocationPermission permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-    }
-    if (!mounted) return;
-
-    // Case C — permanently denied: offer settings shortcut
-    if (permission == LocationPermission.deniedForever) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text(_permissionForeverMsg),
-          backgroundColor: AppColors.critical,
-          action: SnackBarAction(
-            label: _openSettingsLabel,
-            textColor: AppColors.textPrimary,
-            onPressed: Geolocator.openAppSettings,
-          ),
-        ),
-      );
-      return;
-    }
-
-    // Case B — denied once: user can tap again to re-request
-    if (permission == LocationPermission.denied) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(_permissionDeniedMsg),
-          backgroundColor: AppColors.critical,
-        ),
-      );
-      return;
-    }
-
-    // Case D — location services off or any platform error
-    Position position;
-    try {
-      position = await Geolocator.getCurrentPosition();
-    } catch (_) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(_locationErrorMsg),
-          backgroundColor: AppColors.critical,
-        ),
-      );
-      return;
-    }
-    if (!mounted) return;
-
-    final distanceMeters = Geolocator.distanceBetween(
-      position.latitude,
-      position.longitude,
-      widget.request.lat,
-      widget.request.lng,
+  Future<void> _confirmCheckIn() async {
+    final ok = await showDialog<bool>(
+      context: context,
+      barrierColor: Colors.black.withValues(alpha: 0.6),
+      builder: (_) => const CheckInDialog(),
     );
+    if (ok != true || !mounted) return;
+    await _onCheckIn();
+  }
 
-    if (distanceMeters <= AppConstants.checkInRadiusMeters) {
-      // Success
-      setState(() => _checkedIn = true);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(_arrivedMsg),
-          backgroundColor: AppColors.success,
-          duration: Duration(seconds: 2),
-        ),
-      );
-    } else {
-      // Case A — too far: button stays tappable, user can walk closer
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            _tooFarMsg(
-              distanceMeters.round(),
-              AppConstants.checkInRadiusMeters.toInt(),
-            ),
-          ),
-          backgroundColor: AppColors.critical,
-          duration: const Duration(seconds: 3),
-        ),
-      );
-    }
+  Future<void> _onCheckIn() async {
+    final ok = await performCheckIn(
+      context: context,
+      requestLat: widget.request.lat,
+      requestLng: widget.request.lng,
+    );
+    if (!mounted || !ok) return;
+    setState(() => _checkedIn = true);
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text(_arrivedMsg),
+        backgroundColor: AppColors.success,
+        duration: Duration(seconds: 2),
+      ),
+    );
   }
 
   void _showRoleSheet() {
@@ -177,6 +115,7 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final request = widget.request;
+    final joined = context.watch<JoinedRequestsProvider>().isJoined(request.id);
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -240,10 +179,10 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
             ),
           ),
           _BottomBar(
-            accepted: _accepted,
+            accepted: joined,
             checkedIn: _checkedIn,
             onHelp: _onHelp,
-            onCheckIn: _onCheckIn,
+            onCheckIn: _confirmCheckIn,
           ),
         ],
       ),

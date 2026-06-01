@@ -134,3 +134,12 @@ const mockFeedRequests = <RequestDetailData>[
   mockRequest4,
   mockRequest5,
 ];
+
+/// Resolves a feed request by id — used by the router's detail route when the
+/// model wasn't passed through as `extra` (e.g. a deep link or refresh).
+RequestDetailData? requestById(String id) {
+  for (final r in mockFeedRequests) {
+    if (r.id == id) return r;
+  }
+  return null;
+}

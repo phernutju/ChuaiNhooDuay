@@ -47,8 +47,13 @@ class _VolunteerReadyAppState extends State<VolunteerReadyApp> {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider<AuthProvider>.value(
-      value: _auth,
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider<AuthProvider>.value(value: _auth),
+        ChangeNotifierProvider<JoinedRequestsProvider>(
+          create: (_) => JoinedRequestsProvider(),
+        ),
+      ],
       child: Consumer<AuthProvider>(
         builder: (context, auth, _) {
           if (!auth.initialized) {

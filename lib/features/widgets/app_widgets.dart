@@ -172,3 +172,112 @@ class StepProgress extends StatelessWidget {
     );
   }
 }
+
+/// Shared confirmation dialog for the check-in action.
+/// Used by both the Active tab and the Request Detail screen.
+/// Pops `true` on confirm, `false`/null on cancel.
+class CheckInDialog extends StatelessWidget {
+  const CheckInDialog({super.key});
+
+  static const _title = 'Check in?';
+  static const _body = "Confirm you've arrived to help with this request.";
+  static const _confirmLabel = 'Check in';
+  static const _cancelLabel = 'Cancel';
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      insetPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
+      child: Container(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: AppColors.border, width: 1),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.45),
+              blurRadius: 28,
+              offset: const Offset(0, 12),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 56,
+              height: 56,
+              decoration: const BoxDecoration(
+                color: AppColors.successBg,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.where_to_vote_rounded,
+                color: AppColors.success,
+                size: 28,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            const Text(
+              _title,
+              style: TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: 20,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            const Text(
+              _body,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 14,
+                height: 1.45,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: ElevatedButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.success,
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+                  ),
+                ),
+                child: const Text(
+                  _confirmLabel,
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+                ),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.xs),
+            SizedBox(
+              width: double.infinity,
+              height: 44,
+              child: TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text(
+                  _cancelLabel,
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
