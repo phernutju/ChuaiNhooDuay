@@ -30,6 +30,11 @@ class AppRoutes {
   static const String name = '/name';
   static const String role = '/role';
   static const String home = '/home';
+  static const String notifications = '/notifications';
+  static const String notificationDetail = '/notification-detail';
+  static const String requestStatus = '/request-status';
+  static const String chat = '/chat';
+  static const String evacuationDetail = '/evacuation-detail';
 }
 
 class AppColors {

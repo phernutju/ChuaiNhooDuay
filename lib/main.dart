@@ -5,10 +5,17 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
 import 'constants/constants.dart';
+import 'features/notification/datasources/firestore_notification_data_source.dart';
+import 'features/notification/datasources/mock_notification_data_source.dart';
+import 'features/notification/datasources/notification_data_source.dart';
 import 'features/widgets/app_widgets.dart';
 import 'firebase_options.dart';
 import 'providers/providers.dart';
 import 'router/router.dart';
+import 'services/notification_service.dart';
+
+// ← flip to false when Firestore backend is ready
+const bool useMock = true;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -26,26 +33,41 @@ class VolunteerReadyApp extends StatefulWidget {
 }
 
 class _VolunteerReadyAppState extends State<VolunteerReadyApp> {
-  late final AuthProvider _auth;
-  late final GoRouter _router;
+  // Eagerly initialized — no dependency on other fields.
+  final NotificationDataSource _notificationSource = useMock
+      ? MockNotificationDataSource()
+      : FirestoreNotificationDataSource(NotificationService());
+
+  AuthProvider? _auth;
+  GoRouter? _router;
+  NotificationProvider? _notifications;
 
   @override
   void initState() {
     super.initState();
     _auth = AuthProvider();
-    _router = createRouter(_auth);
+    _router = createRouter(_auth!);
+    _notifications = NotificationProvider(_notificationSource);
   }
 
   @override
   void dispose() {
-    _auth.dispose();
+    _auth?.dispose();
+    _notifications?.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider<AuthProvider>.value(
-      value: _auth,
+    final auth = _auth!;
+    final notifications = _notifications!;
+    final router = _router!;
+
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider<AuthProvider>.value(value: auth),
+        ChangeNotifierProvider<NotificationProvider>.value(value: notifications),
+      ],
       child: Consumer<AuthProvider>(
         builder: (context, auth, _) {
           if (!auth.initialized) {
@@ -59,7 +81,7 @@ class _VolunteerReadyAppState extends State<VolunteerReadyApp> {
             debugShowCheckedModeBanner: false,
             title: AppInfo.appName,
             theme: _theme,
-            routerConfig: _router,
+            routerConfig: router,
           );
         },
       ),

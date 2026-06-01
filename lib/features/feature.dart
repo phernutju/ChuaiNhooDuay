@@ -4,3 +4,4 @@ export 'auth/otp_screen.dart';
 export 'auth/name_screen.dart';
 export 'auth/role_screen.dart';
 export 'home/home_screen.dart';
+export 'notification/notification.dart';

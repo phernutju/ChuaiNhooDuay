@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../constants/constants.dart';
@@ -55,6 +56,16 @@ class HomeScreen extends StatelessWidget {
                       ],
                     ),
                   ),
+                  IconButton(
+                    onPressed: () => context.go(AppRoutes.notifications),
+                    icon: const Icon(
+                      Icons.notifications_outlined,
+                      color: AppColors.textPrimary,
+                    ),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
+                  const SizedBox(width: 8),
                   _RolePill(isVolunteer: isVolunteer),
                 ],
               ),

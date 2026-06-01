@@ -42,12 +42,12 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions web = FirebaseOptions(
     apiKey: 'AIzaSyAl_QvpRmpgqJ0BIUUBl3Sw7N-HgIoOhWM',
-    appId: '1:1017324137334:web:a66aacdeb415dcf0baa857',
+    appId: '1:1017324137334:web:149ec04573811fe0baa857',
     messagingSenderId: '1017324137334',
     projectId: 'chuaynooduay',
     authDomain: 'chuaynooduay.firebaseapp.com',
     storageBucket: 'chuaynooduay.firebasestorage.app',
-    measurementId: 'G-7603CDQ1LR',
+    measurementId: 'G-TDMD07Q5B1',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
@@ -87,4 +87,5 @@ class DefaultFirebaseOptions {
     storageBucket: 'chuaynooduay.firebasestorage.app',
     measurementId: 'G-TDMD07Q5B1',
   );
+
 }
