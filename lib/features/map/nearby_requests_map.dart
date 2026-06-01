@@ -27,6 +27,7 @@ class NearbyRequestsMap extends StatefulWidget {
     required this.requests,
     this.onRequestTap,
     this.onRadiusChanged,
+    this.cameraBounds,
   });
 
   final LatLng center;
@@ -34,6 +35,7 @@ class NearbyRequestsMap extends StatefulWidget {
   final List<RequestModel> requests;
   final void Function(String requestId)? onRequestTap;
   final void Function(double km)? onRadiusChanged;
+  final LatLngBounds? cameraBounds;
 
   @override
   State<NearbyRequestsMap> createState() => _NearbyRequestsMapState();
@@ -188,10 +190,14 @@ class _NearbyRequestsMapState extends State<NearbyRequestsMap> {
       children: [
         GoogleMap(
           initialCameraPosition:
-              CameraPosition(target: widget.center, zoom: 11),
+              CameraPosition(target: widget.center, zoom: 10),
           markers: _buildMarkers(),
           circles: _buildCircle(),
           myLocationButtonEnabled: false,
+          cameraTargetBounds: widget.cameraBounds == null
+              ? CameraTargetBounds.unbounded
+              : CameraTargetBounds(widget.cameraBounds!),
+          minMaxZoomPreference: const MinMaxZoomPreference(10, 18),
         ),
         if (widget.onRadiusChanged != null)
           Positioned(

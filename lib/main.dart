@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'constants/constants.dart';
+import 'utils/google_maps_loader.dart';
 import 'features/widgets/app_widgets.dart';
 import 'firebase_options.dart';
 import 'providers/providers.dart';
@@ -45,8 +46,13 @@ class _VolunteerReadyAppState extends State<VolunteerReadyApp> {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider<AuthProvider>.value(
-      value: _auth,
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider<AuthProvider>.value(value: _auth),
+        ChangeNotifierProvider<JoinedRequestsProvider>(
+          create: (_) => JoinedRequestsProvider(),
+        ),
+      ],
       child: Consumer<AuthProvider>(
         builder: (context, auth, _) {
           if (!auth.initialized) {
@@ -91,19 +97,6 @@ class _SplashScreen extends StatelessWidget {
       backgroundColor: AppColors.background,
       body: Center(
         child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          //
-          // TRY THIS: Invoke "debug painting" (choose the "Toggle Debug Paint"
-          // action in the IDE, or press "p" in the console), to see the
-          // wireframe for each widget.
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             BrandLogo(size: 64),

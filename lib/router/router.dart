@@ -1,11 +1,10 @@
+import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../constants/constants.dart';
 import '../features/feature.dart';
-import '../providers/providers.dart';
-
-// DEV: imports for test route — remove before submission
-import '../features/request_detail/screens/request_detail_screen.dart';
 import '../features/request_detail/mock/request_mock_data.dart';
+import '../features/request_detail/screens/request_detail_screen.dart';
+import '../providers/providers.dart';
 
 /// Builds the app router with an auth-aware redirect guard.
 ///
@@ -63,6 +62,30 @@ GoRouter createRouter(AuthProvider auth) {
       GoRoute(
         path: AppRoutes.home,
         builder: (context, state) => const HomeScreen(),
+      ),
+
+      // Request detail. The feed/active screens push with the model as `extra`;
+      // we fall back to an id lookup so a direct `/request/:id` still resolves.
+      GoRoute(
+        path: '${AppRoutes.requestDetail}/:id',
+        builder: (context, state) {
+          final extra = state.extra;
+          final request = extra is RequestDetailData
+              ? extra
+              : requestById(state.pathParameters['id'] ?? '');
+          if (request == null) {
+            return const Scaffold(
+              backgroundColor: AppColors.background,
+              body: Center(
+                child: Text(
+                  'Request not found',
+                  style: TextStyle(color: AppColors.textSecondary),
+                ),
+              ),
+            );
+          }
+          return RequestDetailScreen(request: request);
+        },
       ),
 
       // DEV: test route for Request Detail screen — remove before submission

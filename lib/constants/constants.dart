@@ -30,6 +30,10 @@ class AppRoutes {
   static const String name = '/name';
   static const String role = '/role';
   static const String home = '/home';
+
+  /// Request detail. Navigate as `$requestDetail/$id`; the model may ride
+  /// along as router `extra` to avoid a re-fetch.
+  static const String requestDetail = '/request';
 }
 
 class AppColors {
@@ -63,6 +67,16 @@ class AppColors {
   static const Color brand = Color(0xFFF2683C);
   static const Color volunteer = Color(0xFF34C759);
   static const Color requester = Color(0xFFFF453A);
+
+  /// Active/selected accent for the bottom navigation bar.
+  static const Color navActive = Color(0xFF7088E8);
+  static const Color navActiveBg = Color(0xFF1E2440);
+}
+
+class AppConstants {
+  AppConstants._();
+
+  static const double checkInRadiusMeters = 100;
 }
 
 class AppSpacing {

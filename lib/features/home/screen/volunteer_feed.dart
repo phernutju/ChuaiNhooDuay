@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../../constants/constants.dart';
@@ -9,7 +10,6 @@ import '../../../widgets/request_card.dart';
 import '../../../widgets/role_pill.dart';
 import '../../../widgets/role_switch_sheet.dart';
 import '../../request_detail/mock/request_mock_data.dart';
-import '../../request_detail/screens/request_detail_screen.dart';
 
 /// Stable per-name avatar tint so the same requester always reads the same
 /// colour across the feed and the detail screen.
@@ -84,17 +84,24 @@ class _VolunteerFeedScreenState extends State<VolunteerFeedScreen> {
       isScrollControlled: true,
       builder: (_) => RoleSwitchSheet(
         currentRole: _currentRole,
-        onRoleSelected: (role) => setState(() => _currentRole = role),
+        onRoleSelected: (role) {
+          // Persisting the role flips the root gate to the matching shell.
+          if (role == RoleType.requester) {
+            context.read<AuthProvider>().switchRole(UserRole.civilian);
+          } else {
+            setState(() => _currentRole = role);
+          }
+        },
       ),
     );
   }
 
+  /// Card tap and "Respond" both open the detail screen — the join action
+  /// lives there now, so the feed only navigates (no Active mutation here).
+  /// The id goes through the router; the model rides along as `extra` so the
+  /// detail screen renders instantly without a re-fetch.
   void _openRequest(RequestDetailData request) {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => RequestDetailScreen(request: request),
-      ),
-    );
+    context.push('${AppRoutes.requestDetail}/${request.id}', extra: request);
   }
 
   int _countFor(_FeedFilter filter) =>
