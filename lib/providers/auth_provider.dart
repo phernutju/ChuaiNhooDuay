@@ -161,6 +161,26 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Switches the signed-in user's role and persists it, so the root role gate
+  /// re-routes to the matching shell. No-op if there's no profile or the role
+  /// is unchanged.
+  Future<void> switchRole(UserRole role) async {
+    final current = _userModel;
+    if (current == null || current.role == role) return;
+    _userModel = await _userService.updateUser(current.copyWith(role: role));
+    notifyListeners();
+  }
+
+  /// Updates the display name on the profile (used by the Profile tab). No-op
+  /// if there's no profile or the trimmed name is unchanged.
+  Future<void> updateName(String name) async {
+    final current = _userModel;
+    final trimmed = name.trim();
+    if (current == null || trimmed.isEmpty || trimmed == current.name) return;
+    _userModel = await _userService.updateUser(current.copyWith(name: trimmed));
+    notifyListeners();
+  }
+
   Future<void> signOut() async {
     await _authService.signOut();
     _resetFlow();

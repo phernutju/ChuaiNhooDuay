@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:we_are_ready/constants/constants.dart';
 import 'package:we_are_ready/features/request_detail/mock/request_mock_data.dart';
+import 'package:we_are_ready/providers/providers.dart';
 import 'package:we_are_ready/widgets/role_pill.dart';
 import 'package:we_are_ready/widgets/role_switch_sheet.dart';
 import 'package:we_are_ready/models/request_model.dart';
@@ -28,14 +30,14 @@ class RequestDetailScreen extends StatefulWidget {
 }
 
 class _RequestDetailScreenState extends State<RequestDetailScreen> {
-  bool _accepted = false;
   RoleType _currentRole = RoleType.volunteer;
 
   static const _appBarTitle = 'Request';
-  static const _snackBarMsg = "You're helping!";
+  static const _snackBarMsg = "You're helping — added to Active";
 
+  /// The single place a request joins the volunteer's Active list.
   void _onHelp() {
-    setState(() => _accepted = true);
+    context.read<JoinedRequestsProvider>().join(widget.request);
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text(_snackBarMsg),
@@ -60,6 +62,7 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final request = widget.request;
+    final joined = context.watch<JoinedRequestsProvider>().isJoined(request.id);
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -123,7 +126,7 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
             ),
           ),
           _BottomBar(
-            accepted: _accepted,
+            accepted: joined,
             onHelp: _onHelp,
           ),
         ],
@@ -441,7 +444,7 @@ class _BottomBar extends StatelessWidget {
   final bool accepted;
   final VoidCallback onHelp;
 
-  static const _acceptedLabel = '✓  Accepted';
+  static const _acceptedLabel = '✓  Joined';
 
   @override
   Widget build(BuildContext context) {
