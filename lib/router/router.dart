@@ -76,9 +76,18 @@ GoRouter createRouter(AuthProvider auth) {
         path: '${AppRoutes.requestDetail}/:id',
         builder: (context, state) {
           final extra = state.extra;
-          final request = extra is RequestDetailData
-              ? extra
-              : requestById(state.pathParameters['id'] ?? '');
+          final RequestDetailData? request;
+          final bool showActions;
+          if (extra is Map) {
+            request = extra['request'] as RequestDetailData?;
+            showActions = extra['showActions'] as bool? ?? true;
+          } else if (extra is RequestDetailData) {
+            request = extra;
+            showActions = true;
+          } else {
+            request = requestById(state.pathParameters['id'] ?? '');
+            showActions = true;
+          }
           if (request == null) {
             return const Scaffold(
               backgroundColor: AppColors.background,
@@ -90,7 +99,7 @@ GoRouter createRouter(AuthProvider auth) {
               ),
             );
           }
-          return RequestDetailScreen(request: request);
+          return RequestDetailScreen(request: request, showActions: showActions);
         },
       ),
     ],

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
 import '../../models/request_model.dart';
 import '../../services/request_service.dart';
+import '../../services/user_service.dart';
 
 class RequesterState {
   final RequestType? selectedCategory;
@@ -115,16 +116,18 @@ class RequesterController extends StateNotifier<RequesterState> {
 
     state = state.copyWith(isSubmitting: true, error: null);
     try {
-      User? user = FirebaseAuth.instance.currentUser;
-      if (user == null) {
-        final cred = await FirebaseAuth.instance.signInAnonymously();
-        user = cred.user!;
-      }
+      final uid = FirebaseAuth.instance.currentUser?.uid;
+      if (uid == null) throw Exception('Not authenticated');
+
+      final userModel = await UserService().getUser(uid);
+      final displayName = state.isAnonymous
+          ? 'Anonymous'
+          : (userModel?.name?.isNotEmpty == true ? userModel!.name! : 'Requester');
 
       final now = DateTime.now();
       final request = RequestModel(
         id: '',
-        createdBy: user.uid,
+        createdBy: uid,
         title: state.selectedCategory == RequestType.other &&
                 state.description.isNotEmpty
             ? state.description.split('\n').first
@@ -140,6 +143,7 @@ class RequesterController extends StateNotifier<RequesterState> {
         maxVolunteer: 5,
         status: RequestStatus.waiting,
         isAnonymous: state.isAnonymous,
+        requesterName: displayName,
         createdAt: now,
         updatedAt: now,
       );
