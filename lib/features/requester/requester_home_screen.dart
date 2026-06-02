@@ -2,12 +2,35 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:provider/provider.dart' as pkg_provider;
 import '../../constants/constants.dart';
 import '../../models/request_model.dart';
+import '../../models/user_model.dart';
+import '../../providers/auth_provider.dart' as app_auth;
+import '../../widgets/role_pill.dart';
+import '../../widgets/role_switch_sheet.dart';
 import 'requester_controller.dart';
 
 class RequesterHomeScreen extends ConsumerWidget {
   const RequesterHomeScreen({super.key});
+
+  void _showRoleSheet(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (_) => RoleSwitchSheet(
+        currentRole: RoleType.requester,
+        onRoleSelected: (role) {
+          if (role == RoleType.volunteer) {
+            context
+                .read<app_auth.AuthProvider>()
+                .switchRole(UserRole.volunteer);
+          }
+        },
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -56,6 +79,11 @@ class RequesterHomeScreen extends ConsumerWidget {
                 icon: const Icon(Icons.notifications_outlined,
                     color: Colors.white70),
                 onPressed: () {},
+              ),
+              IconButton(
+                icon: const Icon(Icons.swap_horiz, color: Colors.white70),
+                tooltip: 'Switch role',
+                onPressed: () => _showRoleSheet(context),
               ),
               _RequesterBadge(),
               const SizedBox(width: 8),
@@ -341,8 +369,8 @@ class _ActiveRequestsSection extends StatelessWidget {
                 ),
           loading: () => const Center(
               child: CircularProgressIndicator(color: kPrimaryBlue)),
-          error: (e, _) => Text('Error loading requests',
-              style: TextStyle(color: kCriticalColor)),
+          error: (e, _) => Text('Error: $e',
+              style: TextStyle(color: kCriticalColor, fontSize: 11)),
         ),
       ],
     );

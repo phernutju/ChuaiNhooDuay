@@ -10,6 +10,7 @@ class RequestService {
   }
 
   Stream<List<RequestModel>> getMyRequests(String requesterId) {
+    if (requesterId.isEmpty) return Stream.value([]);
     return _db
         .collection('requests')
         .where('createdBy', isEqualTo: requesterId)
@@ -21,15 +22,8 @@ class RequestService {
             .toList());
   }
 
-  // Writes a trigger doc; Cloud Function handles FCM dispatch to volunteers within radiusKm.
+  // Stub — FCM not wired yet. Returns placeholder count.
   Future<int> notifyNearbyVolunteers(String requestId, GeoPoint location) async {
-    await _db.collection('notification_triggers').add({
-      'requestId': requestId,
-      'location': location,
-      'radiusKm': 2.0,
-      'createdAt': FieldValue.serverTimestamp(),
-      'processed': false,
-    });
-    return 147; // Cloud Function resolves real count; placeholder until then
+    return 147;
   }
 }
