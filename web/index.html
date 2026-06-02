@@ -31,6 +31,13 @@
 
   <title>ChuayNooDuay</title>
   <link rel="manifest" href="manifest.json">
+
+  <!-- Hide the reCAPTCHA badge globally (Firebase Phone Auth on web). -->
+  <style>
+    .grecaptcha-badge {
+      visibility: hidden !important;
+    }
+  </style>
 </head>
 <body>
   <!--
