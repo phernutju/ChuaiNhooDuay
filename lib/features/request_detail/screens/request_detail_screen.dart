@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:we_are_ready/constants/constants.dart';
@@ -8,6 +9,7 @@ import 'package:we_are_ready/utils/check_in_service.dart';
 import 'package:we_are_ready/features/request_detail/mock/request_mock_data.dart';
 import 'package:provider/provider.dart';
 import 'package:we_are_ready/providers/providers.dart';
+import 'package:we_are_ready/services/request_service.dart';
 import 'package:we_are_ready/widgets/role_pill.dart';
 import 'package:we_are_ready/widgets/role_switch_sheet.dart';
 import 'package:we_are_ready/models/request_model.dart';
@@ -62,8 +64,15 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
   static const _snackBarMsg = "You're helping!";
   static const _arrivedMsg = "You've arrived!";
   /// The single place a request joins the volunteer's Active list.
-  void _onHelp() {
+  Future<void> _onHelp() async {
     context.read<JoinedRequestsProvider>().join(widget.request);
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid != null && widget.request.id.isNotEmpty) {
+      try {
+        await RequestService().joinRequest(widget.request.id, uid);
+      } catch (_) {}
+    }
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text(_snackBarMsg),

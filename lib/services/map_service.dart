@@ -14,7 +14,7 @@ class MapService {
   Stream<List<RequestModel>> getOpenRequests() {
     return _db
         .collection('requests')
-        .where('status', isEqualTo: 'open')
+        .where('status', isEqualTo: 'waiting')
         .snapshots()
         .map(
           (snap) =>

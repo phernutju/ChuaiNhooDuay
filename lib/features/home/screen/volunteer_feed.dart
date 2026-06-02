@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
+import 'package:provider/provider.dart' as pkg_provider;
 
 import '../../../constants/constants.dart';
 import '../../../models/request_model.dart';
@@ -10,6 +11,7 @@ import '../../../widgets/request_card.dart';
 import '../../../widgets/role_pill.dart';
 import '../../../widgets/role_switch_sheet.dart';
 import '../../request_detail/mock/request_mock_data.dart';
+import '../../requester/requester_controller.dart';
 
 /// Stable per-name avatar tint so the same requester always reads the same
 /// colour across the feed and the detail screen.
@@ -45,7 +47,7 @@ extension on _FeedFilter {
         _FeedFilter.general => AppColors.general,
       };
 
-  bool matches(RequestDetailData r) => switch (this) {
+  bool matches(RequestModel r) => switch (this) {
         _FeedFilter.all => true,
         _FeedFilter.critical => r.urgencyLevel == UrgencyLevel.critical,
         _FeedFilter.urgent => r.urgencyLevel == UrgencyLevel.urgent,
@@ -58,24 +60,33 @@ extension on _FeedFilter {
 /// Layout follows .claude/volunteer_screen: profile-avatar header, filter
 /// chips, and a pull-to-refresh request list. Cards reuse [RequestDetailData]
 /// and route into the existing request-detail feature.
-class VolunteerFeedScreen extends StatefulWidget {
+class VolunteerFeedScreen extends ConsumerStatefulWidget {
   const VolunteerFeedScreen({super.key});
 
   @override
-  State<VolunteerFeedScreen> createState() => _VolunteerFeedScreenState();
+  ConsumerState<VolunteerFeedScreen> createState() =>
+      _VolunteerFeedScreenState();
 }
 
-class _VolunteerFeedScreenState extends State<VolunteerFeedScreen> {
+class _VolunteerFeedScreenState extends ConsumerState<VolunteerFeedScreen> {
   _FeedFilter _filter = _FeedFilter.all;
-  RoleType _currentRole = RoleType.volunteer;
-  late List<RequestDetailData> _requests = List.of(mockFeedRequests);
 
-  Future<void> _refresh() async {
-    // No backend yet — reseed from the mock source so pull-to-refresh feels live.
-    await Future<void>.delayed(const Duration(milliseconds: 600));
-    if (!mounted) return;
-    setState(() => _requests = List.of(mockFeedRequests));
-  }
+  RequestDetailData _toDetailData(RequestModel r) => RequestDetailData(
+        id: r.id,
+        category: r.requestType.name,
+        urgencyLevel: r.urgencyLevel,
+        title: r.title,
+        distanceKm: 0,
+        minutesAgo: DateTime.now().difference(r.createdAt).inMinutes,
+        requesterName: r.isAnonymous ? 'Anonymous' : 'Requester',
+        requesterLocation: r.location.address,
+        isAnonymous: r.isAnonymous,
+        isVerified: false,
+        description: r.description,
+        skillsNeeded: const [],
+        lat: r.location.coordinates.latitude,
+        lng: r.location.coordinates.longitude,
+      );
 
   void _showRoleSheet() {
     showModalBottomSheet<void>(
@@ -83,82 +94,92 @@ class _VolunteerFeedScreenState extends State<VolunteerFeedScreen> {
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (_) => RoleSwitchSheet(
-        currentRole: _currentRole,
+        currentRole: RoleType.volunteer,
         onRoleSelected: (role) {
-          // Persisting the role flips the root gate to the matching shell.
           if (role == RoleType.requester) {
-            context.read<AuthProvider>().switchRole(UserRole.civilian);
-          } else {
-            setState(() => _currentRole = role);
+            context
+                .read<AuthProvider>()
+                .switchRole(UserRole.civilian);
           }
         },
       ),
     );
   }
 
-  /// Card tap and "Respond" both open the detail screen — the join action
-  /// lives there now, so the feed only navigates (no Active mutation here).
-  /// The id goes through the router; the model rides along as `extra` so the
-  /// detail screen renders instantly without a re-fetch.
-  void _openRequest(RequestDetailData request) {
-    context.push('${AppRoutes.requestDetail}/${request.id}', extra: request);
+  void _openRequest(RequestDetailData data) {
+    context.push('${AppRoutes.requestDetail}/${data.id}', extra: data);
   }
-
-  int _countFor(_FeedFilter filter) =>
-      _requests.where(filter.matches).length;
 
   @override
   Widget build(BuildContext context) {
     final user = context.watch<AuthProvider>().userModel;
-    final visible = _requests.where(_filter.matches).toList();
+    final requestsAsync = ref.watch(openRequestsProvider);
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: SafeArea(
-        child: Column(
-          children: [
-            _FeedHeader(
-              user: user,
-              currentRole: _currentRole,
-              onRoleTap: _showRoleSheet,
-              onBellTap: () => ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('No new notifications')),
-              ),
-            ),
-            _FilterBar(
-              selected: _filter,
-              countFor: _countFor,
-              onSelected: (f) => setState(() => _filter = f),
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            Expanded(
-              child: RefreshIndicator(
-                onRefresh: _refresh,
-                color: AppColors.success,
-                backgroundColor: AppColors.surface,
-                child: visible.isEmpty
-                    ? const _EmptyState()
-                    : ListView.separated(
-                        physics: const AlwaysScrollableScrollPhysics(),
-                        padding: const EdgeInsets.fromLTRB(
-                          AppSpacing.md,
-                          AppSpacing.xs,
-                          AppSpacing.md,
-                          AppSpacing.md,
-                        ),
-                        itemCount: visible.length,
-                        separatorBuilder: (_, _) =>
-                            const SizedBox(height: AppSpacing.md - 4),
-                        itemBuilder: (_, i) => RequestCard(
-                          request: visible[i],
-                          onTap: () => _openRequest(visible[i]),
-                        ),
-                      ),
-              ),
-            ),
-          ],
+    return requestsAsync.when(
+      loading: () => const Scaffold(
+        backgroundColor: AppColors.background,
+        body: Center(
+          child: CircularProgressIndicator(color: AppColors.success),
         ),
       ),
+      error: (e, _) => Scaffold(
+        backgroundColor: AppColors.background,
+        body: Center(
+          child: Text('Error: $e',
+              style: const TextStyle(color: AppColors.critical)),
+        ),
+      ),
+      data: (requests) {
+        final visible = requests.where(_filter.matches).toList();
+        final detailList = visible.map(_toDetailData).toList();
+
+        return Scaffold(
+          backgroundColor: AppColors.background,
+          body: SafeArea(
+            child: Column(
+              children: [
+                _FeedHeader(
+                  user: user,
+                  currentRole: RoleType.volunteer,
+                  onRoleTap: _showRoleSheet,
+                  onBellTap: () => context.go(AppRoutes.notifications),
+                ),
+                _FilterBar(
+                  selected: _filter,
+                  countFor: (f) => requests.where(f.matches).length,
+                  onSelected: (f) => setState(() => _filter = f),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                Expanded(
+                  child: RefreshIndicator(
+                    onRefresh: () async {},
+                    color: AppColors.success,
+                    backgroundColor: AppColors.surface,
+                    child: detailList.isEmpty
+                        ? const _EmptyState()
+                        : ListView.separated(
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            padding: const EdgeInsets.fromLTRB(
+                              AppSpacing.md,
+                              AppSpacing.xs,
+                              AppSpacing.md,
+                              AppSpacing.md,
+                            ),
+                            itemCount: detailList.length,
+                            separatorBuilder: (_, i) =>
+                                const SizedBox(height: AppSpacing.md - 4),
+                            itemBuilder: (_, i) => RequestCard(
+                              request: detailList[i],
+                              onTap: () => _openRequest(detailList[i]),
+                            ),
+                          ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }

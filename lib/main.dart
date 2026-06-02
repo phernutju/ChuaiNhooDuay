@@ -12,6 +12,7 @@ import 'features/notification/datasources/mock_notification_data_source.dart';
 import 'features/notification/datasources/notification_data_source.dart';
 import 'features/widgets/app_widgets.dart';
 import 'firebase_options.dart';
+import 'providers/map_provider.dart';
 import 'providers/providers.dart';
 import 'router/router.dart';
 import 'services/notification_service.dart';
@@ -69,6 +70,9 @@ class _WeAreReadyAppState extends State<WeAreReadyApp> {
         ),
         pkg_provider.ChangeNotifierProvider<NotificationProvider>.value(
           value: _notifications,
+        ),
+        pkg_provider.ChangeNotifierProvider<MapProvider>(
+          create: (_) => MapProvider(),
         ),
       ],
       child: pkg_provider.Consumer<AuthProvider>(

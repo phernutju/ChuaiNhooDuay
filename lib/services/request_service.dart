@@ -14,12 +14,35 @@ class RequestService {
     return _db
         .collection('requests')
         .where('createdBy', isEqualTo: requesterId)
-        .orderBy('createdAt', descending: true)
         .snapshots()
-        .map((snap) => snap.docs
-            .map(RequestModel.fromFirestore)
-            .where((r) => r.status != RequestStatus.completed)
-            .toList());
+        .map((snap) {
+          final list = snap.docs
+              .map(RequestModel.fromFirestore)
+              .where((r) => r.status != RequestStatus.completed)
+              .toList();
+          list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+          return list;
+        });
+  }
+
+  Stream<List<RequestModel>> getOpenRequests() {
+    return _db
+        .collection('requests')
+        .where('status', isEqualTo: 'waiting')
+        .snapshots()
+        .map((snap) {
+          final list = snap.docs.map(RequestModel.fromFirestore).toList();
+          list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+          return list;
+        });
+  }
+
+  Future<void> joinRequest(String requestId, String volunteerId) async {
+    await _db.collection('requests').doc(requestId).update({
+      'assignedVolunteerIds': FieldValue.arrayUnion([volunteerId]),
+      'status': 'matched',
+      'updatedAt': Timestamp.now(),
+    });
   }
 
   // Stub — FCM not wired yet. Returns placeholder count.

@@ -1,7 +1,6 @@
 import 'package:we_are_ready/models/notification_model.dart';
 
 abstract class NotificationMockData {
-  static final _now = DateTime.now();
 
   static final List<dynamic> all = [
     VolunteerNotificationModel(

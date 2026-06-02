@@ -125,7 +125,10 @@ class RequesterController extends StateNotifier<RequesterState> {
       final request = RequestModel(
         id: '',
         createdBy: user.uid,
-        title: _categoryTitle(state.selectedCategory!),
+        title: state.selectedCategory == RequestType.other &&
+                state.description.isNotEmpty
+            ? state.description.split('\n').first
+            : _categoryTitle(state.selectedCategory!),
         description: state.description,
         location: RequestLocation(
           address: state.locationAddress,
@@ -184,4 +187,8 @@ final authStateProvider = StreamProvider<User?>((ref) {
 final myRequestsProvider =
     StreamProvider.family<List<RequestModel>, String>((ref, requesterId) {
   return RequestService().getMyRequests(requesterId);
+});
+
+final openRequestsProvider = StreamProvider<List<RequestModel>>((ref) {
+  return RequestService().getOpenRequests();
 });

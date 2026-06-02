@@ -4,7 +4,6 @@ import 'package:we_are_ready/constants/constants.dart';
 import 'package:we_are_ready/features/notification/widgets/lock_screen_preview_banner.dart';
 import 'package:we_are_ready/features/notification/widgets/notification_app_bar.dart';
 import 'package:we_are_ready/features/notification/widgets/notification_tile.dart';
-import 'package:we_are_ready/models/notification_model.dart';
 import 'package:we_are_ready/providers/auth_provider.dart';
 import 'package:we_are_ready/providers/notification_provider.dart';
 
@@ -69,7 +68,7 @@ class _NotificationPageState extends State<NotificationPage> {
                     ? const _EmptyState()
                     : ListView.separated(
                         itemCount: all.length,
-                        separatorBuilder: (_, __) => const Divider(
+                        separatorBuilder: (_, i) => const Divider(
                           height: 1,
                           thickness: 1,
                           color: AppColors.border,

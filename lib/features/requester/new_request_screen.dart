@@ -75,7 +75,7 @@ class _NewRequestScreenState extends ConsumerState<NewRequestScreen> {
                   fontWeight: FontWeight.bold),
             ),
             Text(
-              '3 STEPS · UNDER A MINUTE',
+              '4 STEPS · UNDER A MINUTE',
               style: TextStyle(
                   color: kTextSecondary, fontSize: 10, letterSpacing: 0.8),
             ),
@@ -90,14 +90,16 @@ class _NewRequestScreenState extends ConsumerState<NewRequestScreen> {
             _SectionHeader(number: '1', title: 'What do you need?'),
             const SizedBox(height: 12),
             _CategoryGrid(selected: state.selectedCategory),
-            const SizedBox(height: 12),
+            const SizedBox(height: 20),
+            _SectionHeader(number: '2', title: 'Describe your situation'),
+            const SizedBox(height: 10),
             _DescriptionField(controller: _descController),
             const SizedBox(height: 24),
-            _SectionHeader(number: '2', title: 'How urgent?'),
+            _SectionHeader(number: '3', title: 'How urgent?'),
             const SizedBox(height: 12),
             _UrgencyPicker(selected: state.urgency),
             const SizedBox(height: 24),
-            _SectionHeader(number: '3', title: 'Location'),
+            _SectionHeader(number: '4', title: 'Location'),
             const SizedBox(height: 12),
             _LocationCard(state: state),
             const SizedBox(height: 16),
@@ -230,8 +232,7 @@ class _DescriptionField extends StatelessWidget {
       maxLines: 3,
       style: const TextStyle(color: Colors.white),
       decoration: InputDecoration(
-        hintText:
-            "Briefly describe what you need — e.g. 'someone to help support an elderly woman who fell'...",
+        hintText: 'Briefly describe what you need — e.g. "someone to help support an elderly woman who fell" ...',
         hintStyle: TextStyle(color: kTextSecondary, fontSize: 13),
         filled: true,
         fillColor: kCardColor,

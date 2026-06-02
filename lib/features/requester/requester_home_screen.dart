@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart' as pkg_provider;
 import '../../constants/constants.dart';
+import '../../features/request_detail/mock/request_mock_data.dart';
 import '../../models/request_model.dart';
 import '../../models/user_model.dart';
 import '../../providers/auth_provider.dart' as app_auth;
@@ -21,11 +21,19 @@ class RequesterHomeScreen extends ConsumerWidget {
       isScrollControlled: true,
       builder: (_) => RoleSwitchSheet(
         currentRole: RoleType.requester,
-        onRoleSelected: (role) {
+        onRoleSelected: (role) async {
           if (role == RoleType.volunteer) {
-            context
-                .read<app_auth.AuthProvider>()
-                .switchRole(UserRole.volunteer);
+            try {
+              await context
+                  .read<app_auth.AuthProvider>()
+                  .switchRole(UserRole.volunteer);
+            } catch (e) {
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Switch failed: $e')),
+                );
+              }
+            }
           }
         },
       ),
@@ -34,8 +42,9 @@ class RequesterHomeScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
+    final uid = ref.watch(authStateProvider).value?.uid ?? '';
     final requestsAsync = ref.watch(myRequestsProvider(uid));
+    final userName = context.read<app_auth.AuthProvider>().userModel?.name ?? 'Requester';
 
     return Scaffold(
       backgroundColor: kBgColor,
@@ -56,9 +65,9 @@ class RequesterHomeScreen extends ConsumerWidget {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Your req...',
-                      style: TextStyle(
+                    Text(
+                      userName,
+                      style: const TextStyle(
                           color: Colors.white,
                           fontSize: 15,
                           fontWeight: FontWeight.bold),
@@ -400,92 +409,231 @@ class _RequestCard extends StatelessWidget {
   final RequestModel request;
   const _RequestCard({required this.request});
 
+  RequestDetailData _toDetailData() => RequestDetailData(
+        id: request.id,
+        category: request.requestType.name,
+        urgencyLevel: request.urgencyLevel,
+        title: request.title,
+        distanceKm: 0,
+        minutesAgo: DateTime.now().difference(request.createdAt).inMinutes,
+        requesterName: request.isAnonymous ? 'Anonymous' : 'You',
+        requesterLocation: request.location.address,
+        isAnonymous: request.isAnonymous,
+        isVerified: false,
+        description: request.description,
+        skillsNeeded: const [],
+        lat: request.location.coordinates.latitude,
+        lng: request.location.coordinates.longitude,
+      );
+
+  // Urgency: color + bg
+  static const _urgencyColors = {
+    UrgencyLevel.critical: (Color(0xFFE24B4A), Color(0xFF3D1A1A)),
+    UrgencyLevel.urgent:   (Color(0xFFEF9F27), Color(0xFF2D1F08)),
+    UrgencyLevel.general:  (Color(0xFF639922), Color(0xFF1A2D0F)),
+  };
+
+  // Status: color + bg
+  static const _statusColors = {
+    RequestStatus.matched:   (Color(0xFF4CAF70), Color(0xFF1A2D1A)),
+    RequestStatus.waiting:   (Color(0xFF888888), Color(0xFF2A2A2A)),
+    RequestStatus.completed: (Color(0xFF888888), Color(0xFF2A2A2A)),
+  };
+
   @override
   Widget build(BuildContext context) {
-    final urgencyColor = switch (request.urgencyLevel) {
-      UrgencyLevel.critical => kCriticalColor,
-      UrgencyLevel.urgent => kUrgentColor,
-      UrgencyLevel.general => kGeneralColor,
-    };
-    final statusColor = switch (request.status) {
-      RequestStatus.matched => kGeneralColor,
-      RequestStatus.waiting => Colors.grey,
-      RequestStatus.completed => Colors.grey,
-    };
+    final (urgencyFg, urgencyBg) =
+        _urgencyColors[request.urgencyLevel] ?? (kCriticalColor, const Color(0xFF3D1A1A));
+    final (statusFg, statusBg) =
+        _statusColors[request.status] ?? (Colors.grey, const Color(0xFF2A2A2A));
 
-    return Container(
+    return GestureDetector(
+      onTap: () => context.push(
+        '${AppRoutes.requestDetail}/${request.id}',
+        extra: _toDetailData(),
+      ),
+      child: Container(
       margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: kCardColor,
+        color: const Color(0xFF1A1A1A),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Row 1 — badges + timestamp
           Row(
             children: [
-              _Badge(request.urgencyLevel.name.toUpperCase(), urgencyColor),
+              _Badge(
+                '● ${request.urgencyLevel.name.toUpperCase()}',
+                urgencyFg,
+                urgencyBg,
+              ),
               const SizedBox(width: 6),
-              _Badge(request.status.name.toUpperCase(), statusColor),
+              _Badge(
+                '● ${request.status.name.toUpperCase()}',
+                statusFg,
+                statusBg,
+              ),
               const Spacer(),
               Text(
                 _timeAgo(request.createdAt),
-                style: TextStyle(color: kTextSecondary, fontSize: 11),
+                style: const TextStyle(color: kTextSecondary, fontSize: 11),
               ),
             ],
           ),
           const SizedBox(height: 8),
+          // Row 2 — title
           Text(
             request.title,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
             style: const TextStyle(
-                color: Colors.white,
-                fontSize: 14,
-                fontWeight: FontWeight.w500),
-          ),
-          if (request.description.isNotEmpty) ...[
-            const SizedBox(height: 4),
-            Text(
-              request.description,
-              style: TextStyle(color: kTextSecondary, fontSize: 12),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
+              color: Colors.white,
+              fontSize: 15,
+              fontWeight: FontWeight.bold,
+              height: 1.3,
             ),
-          ],
+          ),
+          const SizedBox(height: 8),
+          // Row 3 — status-dependent
+          if (request.status == RequestStatus.matched)
+            _MatchedRow(assignedCount: request.assignedVolunteerIds.length)
+          else if (request.status == RequestStatus.waiting)
+            _WaitingRow(),
         ],
       ),
+    ),
     );
   }
 
   String _timeAgo(DateTime dt) {
     final diff = DateTime.now().difference(dt);
+    if (diff.inMinutes < 1) return 'Just now';
     if (diff.inMinutes < 60) return 'Posted ${diff.inMinutes} min ago';
     if (diff.inHours < 24) return 'Posted ${diff.inHours} hr ago';
     return 'Posted ${diff.inDays}d ago';
   }
 }
 
+class _MatchedRow extends StatelessWidget {
+  final int assignedCount;
+  const _MatchedRow({required this.assignedCount});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        // Avatar stack
+        SizedBox(
+          width: assignedCount > 1 ? 44.0 : 24.0,
+          height: 24,
+          child: Stack(
+            children: List.generate(
+              assignedCount.clamp(0, 3),
+              (i) => Positioned(
+                left: i * 14.0,
+                child: CircleAvatar(
+                  radius: 12,
+                  backgroundColor: const Color(0xFF4CAF70),
+                  child: Text(
+                    String.fromCharCode(65 + i),
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Volunteer responding',
+                style: TextStyle(color: Colors.white, fontSize: 12),
+              ),
+              Text(
+                assignedCount > 1
+                    ? 'ETA soon · +${assignedCount - 1} more responding'
+                    : 'ETA soon',
+                style: const TextStyle(color: kTextSecondary, fontSize: 11),
+              ),
+            ],
+          ),
+        ),
+        const Icon(Icons.chevron_right, color: kTextSecondary, size: 18),
+      ],
+    );
+  }
+}
+
+class _WaitingRow extends StatelessWidget {
+  const _WaitingRow();
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        const Icon(Icons.circle, color: Color(0xFF888888), size: 8),
+        const SizedBox(width: 6),
+        const Expanded(
+          child: Text(
+            'Reaching nearby volunteers...',
+            style: TextStyle(color: kTextSecondary, fontSize: 12),
+          ),
+        ),
+        GestureDetector(
+          onTap: () {},
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: const Color(0xFF2A2A2A),
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(color: const Color(0xFF444444)),
+            ),
+            child: const Text(
+              'Boost',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class _Badge extends StatelessWidget {
   final String label;
-  final Color color;
-  const _Badge(this.label, this.color);
+  final Color fg;
+  final Color bg;
+  const _Badge(this.label, this.fg, this.bg);
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
       decoration: BoxDecoration(
-        color: color.withValues(alpha:0.15),
-        border: Border.all(color: color.withValues(alpha:0.6)),
+        color: bg,
         borderRadius: BorderRadius.circular(4),
       ),
       child: Text(
         label,
         style: TextStyle(
-            color: color,
-            fontSize: 10,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 0.4),
+          color: fg,
+          fontSize: 10,
+          fontWeight: FontWeight.bold,
+          letterSpacing: 0.4,
+        ),
       ),
     );
   }

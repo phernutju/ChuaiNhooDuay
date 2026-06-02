@@ -98,6 +98,15 @@ class RequestCard extends StatelessWidget {
                 height: 1.3,
               ),
             ),
+            if (request.description.isNotEmpty) ...[
+              const SizedBox(height: 4),
+              Text(
+                request.description,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: AppTextStyles.bodySmall,
+              ),
+            ],
             const SizedBox(height: AppSpacing.md),
             Row(
               children: [
