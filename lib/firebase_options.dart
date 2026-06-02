@@ -87,4 +87,5 @@ class DefaultFirebaseOptions {
     storageBucket: 'chuaynooduay.firebasestorage.app',
     measurementId: 'G-TDMD07Q5B1',
   );
+
 }

@@ -1,7 +1,9 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart' as pkg_provider;
 
 import 'constants/constants.dart';
@@ -9,10 +11,13 @@ import 'features/widgets/app_widgets.dart';
 import 'firebase_options.dart';
 import 'providers/providers.dart';
 import 'router/router.dart';
+import 'utils/google_maps_loader.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  await dotenv.load(fileName: '.env');
+  await loadGoogleMaps(dotenv.env['MAPS_API_KEY'] ?? '');
   runApp(const ProviderScope(child: WeAreReadyApp()));
 }
 
@@ -42,8 +47,13 @@ class _WeAreReadyAppState extends State<WeAreReadyApp> {
 
   @override
   Widget build(BuildContext context) {
-    return pkg_provider.ChangeNotifierProvider<AuthProvider>.value(
-      value: _auth,
+    return pkg_provider.MultiProvider(
+      providers: [
+        pkg_provider.ChangeNotifierProvider<AuthProvider>.value(value: _auth),
+        pkg_provider.ChangeNotifierProvider<JoinedRequestsProvider>(
+          create: (_) => JoinedRequestsProvider(),
+        ),
+      ],
       child: pkg_provider.Consumer<AuthProvider>(
         builder: (context, auth, _) {
           if (!auth.initialized) {
@@ -72,6 +82,9 @@ class _WeAreReadyAppState extends State<WeAreReadyApp> {
           seedColor: AppColors.primary,
           brightness: Brightness.dark,
           surface: AppColors.background,
+        ),
+        textTheme: GoogleFonts.poppinsTextTheme(
+          ThemeData(brightness: Brightness.dark).textTheme,
         ),
       );
 }
