@@ -43,10 +43,12 @@ class AppRoutes {
   static const String requesterHome = '/requester-home';
   static const String newRequest = '/new-request';
   static const String requestPosted = '/request-posted';
-
-  /// Request detail. Navigate as `$requestDetail/$id`; the model may ride
-  /// along as router `extra` to avoid a re-fetch.
   static const String requestDetail = '/request';
+  static const String notifications = '/notifications';
+  static const String notificationDetail = '/notification-detail';
+  static const String requestStatus = '/request-status';
+  static const String chat = '/chat';
+  static const String evacuationDetail = '/evacuation-detail';
 }
 
 class AppColors {

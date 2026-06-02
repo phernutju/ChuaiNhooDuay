@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../constants/constants.dart';
 import '../features/feature.dart';
+import '../features/chat/chat_room_screen.dart';
 import '../features/request_detail/mock/request_mock_data.dart';
 import '../features/request_detail/screens/request_detail_screen.dart';
 import '../features/requester/new_request_screen.dart';
 import '../features/requester/post_confirmation_screen.dart';
 import '../features/requester/requester_home_screen.dart';
+import '../mock/mock_messages.dart';
 import '../providers/providers.dart';
 
 GoRouter createRouter(AuthProvider auth) {
@@ -16,8 +18,10 @@ GoRouter createRouter(AuthProvider auth) {
     redirect: (context, state) {
       if (!auth.initialized) return null;
 
-      // DEV: allow test route without auth — remove before submission
+      // DEV: allow test routes without auth — remove before submission
       if (state.matchedLocation == '/request-detail-test') return null;
+      if (state.matchedLocation == '/chat-test') return null;
+      if (state.matchedLocation == '/chat-test-closed') return null;
 
       final location = state.matchedLocation;
       final loggedIn = auth.isAuthenticated;
@@ -52,6 +56,10 @@ GoRouter createRouter(AuthProvider auth) {
       GoRoute(
         path: AppRoutes.home,
         builder: (context, state) => const HomeScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.notifications,
+        builder: (context, state) => const NotificationPage(),
       ),
       GoRoute(
         path: AppRoutes.requesterHome,
@@ -93,11 +101,44 @@ GoRouter createRouter(AuthProvider auth) {
         },
       ),
 
-      // DEV: test route for Request Detail screen — remove before submission
+      // DEV: test routes — remove before submission
       GoRoute(
         path: '/request-detail-test',
         builder: (context, state) =>
             RequestDetailScreen(request: mockRequest1),
+      ),
+      GoRoute(
+        path: '/chat-test',
+        builder: (context, state) => ChatRoomScreen(
+          requestId: MockMessages.requestId,
+          requestTitle: 'Help needed at market',
+          requestCategory: 'MEDICAL AID',
+          urgencyLabel: 'CRITICAL',
+          currentUserId: MockMessages.currentUserId,
+          otherUserName:
+              MockMessages.participantNames[MockMessages.civilianId]!,
+          distanceLabel: '0.3 km away',
+          etaLabel: 'ETA 9 min',
+          participantCount: 2,
+          isReadOnly: false,
+          useMockData: true,
+        ),
+      ),
+      GoRoute(
+        path: '/chat-test-closed',
+        builder: (context, state) => ChatRoomScreen(
+          requestId: MockMessages.requestId,
+          requestTitle: 'Help needed at market',
+          requestCategory: 'MEDICAL AID',
+          urgencyLabel: 'CRITICAL',
+          currentUserId: MockMessages.currentUserId,
+          otherUserName:
+              MockMessages.participantNames[MockMessages.civilianId]!,
+          distanceLabel: '0.3 km away',
+          participantCount: 2,
+          isReadOnly: true,
+          useMockData: true,
+        ),
       ),
     ],
   );

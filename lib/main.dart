@@ -7,11 +7,18 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart' as pkg_provider;
 
 import 'constants/constants.dart';
+import 'features/notification/datasources/firestore_notification_data_source.dart';
+import 'features/notification/datasources/mock_notification_data_source.dart';
+import 'features/notification/datasources/notification_data_source.dart';
 import 'features/widgets/app_widgets.dart';
 import 'firebase_options.dart';
 import 'providers/providers.dart';
 import 'router/router.dart';
+import 'services/notification_service.dart';
 import 'utils/google_maps_loader.dart';
+
+// flip to false when Firestore notification backend is ready
+const bool useMock = true;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -29,19 +36,26 @@ class WeAreReadyApp extends StatefulWidget {
 }
 
 class _WeAreReadyAppState extends State<WeAreReadyApp> {
+  final NotificationDataSource _notificationSource = useMock
+      ? MockNotificationDataSource()
+      : FirestoreNotificationDataSource(NotificationService());
+
   late final AuthProvider _auth;
   late final GoRouter _router;
+  late final NotificationProvider _notifications;
 
   @override
   void initState() {
     super.initState();
     _auth = AuthProvider();
     _router = createRouter(_auth);
+    _notifications = NotificationProvider(_notificationSource);
   }
 
   @override
   void dispose() {
     _auth.dispose();
+    _notifications.dispose();
     super.dispose();
   }
 
@@ -52,6 +66,9 @@ class _WeAreReadyAppState extends State<WeAreReadyApp> {
         pkg_provider.ChangeNotifierProvider<AuthProvider>.value(value: _auth),
         pkg_provider.ChangeNotifierProvider<JoinedRequestsProvider>(
           create: (_) => JoinedRequestsProvider(),
+        ),
+        pkg_provider.ChangeNotifierProvider<NotificationProvider>.value(
+          value: _notifications,
         ),
       ],
       child: pkg_provider.Consumer<AuthProvider>(
