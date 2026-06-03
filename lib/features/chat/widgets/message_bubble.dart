@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:we_are_ready/features/chat/widgets/image_bubble.dart';
 import 'package:we_are_ready/features/chat/widgets/location_bubble.dart';
 import 'package:we_are_ready/features/chat/widgets/system_message_pill.dart';
 import 'package:we_are_ready/models/message_model.dart';
@@ -36,27 +37,33 @@ class MessageBubble extends StatelessWidget {
     super.key,
     required this.message,
     required this.currentUserId,
+    this.senderName,
   });
 
   final MessageModel message;
   final String currentUserId;
+  final String? senderName;
 
   @override
   Widget build(BuildContext context) {
     final isOwn = message.senderId == currentUserId;
     final maxW = MediaQuery.of(context).size.width * 0.72;
 
+    if (message.imageUrl != null) {
+      return _ImageRow(message: message, isOwn: isOwn, senderName: senderName);
+    }
+
     switch (message.type) {
       case MessageType.system:
         return SystemMessagePill(text: message.text ?? '');
 
       case MessageType.location:
-        return _LocationRow(message: message, isOwn: isOwn, maxW: maxW);
+        return _LocationRow(message: message, isOwn: isOwn, maxW: maxW, senderName: senderName);
 
       case MessageType.message:
         return isOwn
             ? _OwnBubble(message: message, maxW: maxW)
-            : _TheirBubble(message: message, maxW: maxW);
+            : _TheirBubble(message: message, maxW: maxW, senderName: senderName);
     }
   }
 }
@@ -64,15 +71,15 @@ class MessageBubble extends StatelessWidget {
 // ─── Received bubble (left) ───────────────────────────────────────────────────
 
 class _TheirBubble extends StatelessWidget {
-  const _TheirBubble({required this.message, required this.maxW});
+  const _TheirBubble({required this.message, required this.maxW, this.senderName});
 
   final MessageModel message;
   final double maxW;
+  final String? senderName;
 
   @override
   Widget build(BuildContext context) {
-    // TODO(backend): replace senderId with resolved display name
-    final label = message.senderId;
+    final label = senderName ?? (message.senderId.isNotEmpty ? message.senderId : '?');
     final initial = label.isNotEmpty ? label[0].toUpperCase() : '?';
 
     return Padding(
@@ -209,24 +216,26 @@ class _LocationRow extends StatelessWidget {
     required this.message,
     required this.isOwn,
     required this.maxW,
+    this.senderName,
   });
 
   final MessageModel message;
   final bool isOwn;
   final double maxW;
+  final String? senderName;
 
   @override
   Widget build(BuildContext context) {
+    final fallback = message.senderId.isNotEmpty ? message.senderId[0].toUpperCase() : '?';
     final initial = isOwn
         ? '·'
-        : (message.senderId.isNotEmpty ? message.senderId[0].toUpperCase() : '?');
+        : (senderName?.isNotEmpty == true ? senderName![0].toUpperCase() : fallback);
 
     final card = ConstrainedBox(
       constraints: BoxConstraints(maxWidth: maxW),
       child: LocationBubble(
-        address: message.text ?? '',
-        // TODO(backend): replace print with url_launcher map open
-        onTap: () => debugPrint('open map: ${message.text}'),
+        coords: message.text ?? '',
+        address: message.locationAddress,
       ),
     );
 
@@ -253,6 +262,74 @@ class _LocationRow extends StatelessWidget {
           _Avatar(initial: initial),
           const SizedBox(width: 6),
           card,
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Image row ────────────────────────────────────────────────────────────────
+
+class _ImageRow extends StatelessWidget {
+  const _ImageRow({
+    required this.message,
+    required this.isOwn,
+    this.senderName,
+  });
+
+  final MessageModel message;
+  final bool isOwn;
+  final String? senderName;
+
+  @override
+  Widget build(BuildContext context) {
+    final label = senderName ?? (message.senderId.isNotEmpty ? message.senderId : '?');
+    final initial = isOwn ? '·' : (label.isNotEmpty ? label[0].toUpperCase() : '?');
+    final bubble = ImageBubble(
+      imageUrl: message.imageUrl!,
+      caption: message.text,
+      isOwn: isOwn,
+      createdAt: message.createdAt,
+      seenCount: message.seenCount,
+    );
+
+    if (isOwn) {
+      return Padding(
+        padding: const EdgeInsets.only(right: 10, left: 72, top: 1, bottom: 1),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            bubble,
+            const SizedBox(width: 6),
+            _Avatar(initial: initial),
+          ],
+        ),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(left: 10, right: 72, top: 1, bottom: 1),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: GoogleFonts.ibmPlexSansThai(
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+              color: _C.senderBlue,
+            ),
+          ),
+          const SizedBox(height: 3),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              _Avatar(initial: initial),
+              const SizedBox(width: 6),
+              bubble,
+            ],
+          ),
         ],
       ),
     );
