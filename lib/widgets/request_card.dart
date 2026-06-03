@@ -2,6 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:we_are_ready/constants/constants.dart';
 import 'package:we_are_ready/features/request_detail/mock/request_mock_data.dart';
 import 'package:we_are_ready/models/request_model.dart';
+import 'package:we_are_ready/utils/time_ago.dart';
+
+String _formatDistance(double? km) {
+  if (km == null) return '-- km';
+  final meters = km * 1000;
+  if (meters < 1000) return '${meters.round()} m away';
+  return '${km.toStringAsFixed(1)} km away';
+}
 
 /// Stable per-name avatar tint so the same requester always reads the same
 /// colour across the feed and the detail screen.
@@ -72,12 +80,12 @@ class RequestCard extends StatelessWidget {
                 const Spacer(),
                 _MetaText(
                   icon: Icons.place_outlined,
-                  text: '${request.distanceKm} km',
+                  text: _formatDistance(request.distanceKm),
                 ),
                 const SizedBox(width: AppSpacing.sm + 2),
                 _MetaText(
                   icon: Icons.access_time_rounded,
-                  text: '${request.minutesAgo}m',
+                  text: formatTimeAgo(request.postedAt),
                 ),
               ],
             ),

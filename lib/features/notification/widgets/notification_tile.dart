@@ -207,8 +207,9 @@ class NotificationTile extends StatelessWidget {
       category: request.requestType.name,
       urgencyLevel: request.urgencyLevel,
       title: request.title,
-      distanceKm: 0,
+      distanceKm: null,
       minutesAgo: DateTime.now().difference(request.createdAt).inMinutes,
+      postedAt: request.createdAt,
       requesterName: request.isAnonymous
           ? 'Anonymous'
           : (request.requesterName.isNotEmpty

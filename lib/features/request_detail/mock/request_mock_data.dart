@@ -5,8 +5,9 @@ class RequestDetailData {
   final String category;
   final UrgencyLevel urgencyLevel;
   final String title;
-  final double distanceKm;
+  final double? distanceKm;
   final int minutesAgo;
+  final DateTime postedAt;
   final String requesterName;
   final String requesterLocation;
   final bool isAnonymous;
@@ -25,6 +26,7 @@ class RequestDetailData {
     required this.title,
     required this.distanceKm,
     required this.minutesAgo,
+    required this.postedAt,
     required this.requesterName,
     required this.requesterLocation,
     required this.isAnonymous,
