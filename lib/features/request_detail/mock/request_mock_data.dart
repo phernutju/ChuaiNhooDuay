@@ -15,6 +15,8 @@ class RequestDetailData {
   final List<String> skillsNeeded;
   final double lat;
   final double lng;
+  final String createdBy;
+  final RequestStatus requestStatus;
 
   const RequestDetailData({
     required this.id,
@@ -31,6 +33,8 @@ class RequestDetailData {
     required this.skillsNeeded,
     required this.lat,
     required this.lng,
+    this.createdBy = '',
+    this.requestStatus = RequestStatus.waiting,
   });
 }
 

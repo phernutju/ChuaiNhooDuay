@@ -1,10 +1,16 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:we_are_ready/constants/constants.dart';
+import 'package:we_are_ready/features/chat/chat_room_screen.dart';
 import 'package:we_are_ready/features/notification/widgets/notification_icon_badge.dart';
+import 'package:we_are_ready/features/request_detail/mock/request_mock_data.dart';
 import 'package:we_are_ready/models/notification_model.dart';
+import 'package:we_are_ready/models/request_model.dart';
+import 'package:we_are_ready/providers/auth_provider.dart';
 import 'package:we_are_ready/providers/notification_provider.dart';
+import 'package:we_are_ready/services/message_service.dart';
 
 class NotificationTile extends StatelessWidget {
   const NotificationTile({super.key, required this.notification});
@@ -146,25 +152,83 @@ class NotificationTile extends StatelessWidget {
     String recipientType,
     GlobalNotificationType? globalType,
   ) async {
-    final notifier = context.read<NotificationProvider>();
-    await notifier.markRead(id);
+    await context.read<NotificationProvider>().markRead(id);
     if (!context.mounted) return;
 
-    switch (recipientType) {
-      case 'volunteer':
-        context.push('${AppRoutes.notificationDetail}/$requestId');
-      case 'civilian':
-        context.push('${AppRoutes.requestStatus}/$requestId');
-      case 'global':
-        switch (globalType) {
-          case GlobalNotificationType.chatMessage:
-            context.push(AppRoutes.chat);
-          case GlobalNotificationType.evacuationNotice:
-            context.push(AppRoutes.evacuationDetail);
-          default:
-            context.push('${AppRoutes.notificationDetail}/$requestId');
-        }
+    // Evacuation notices have no linked request — nothing to navigate to.
+    if (globalType == GlobalNotificationType.evacuationNotice) return;
+    if (requestId.isEmpty) return;
+
+    // Fetch the request document.
+    DocumentSnapshot snap;
+    try {
+      snap = await FirebaseFirestore.instance
+          .collection('requests')
+          .doc(requestId)
+          .get();
+    } catch (_) {
+      return;
     }
+    if (!context.mounted || !snap.exists) return;
+
+    final request = RequestModel.fromFirestore(snap);
+    final currentUserId =
+        context.read<AuthProvider>().userModel?.id ?? '';
+    final isCreator = request.createdBy == currentUserId;
+
+    // Chat message → open the chat room directly.
+    if (globalType == GlobalNotificationType.chatMessage) {
+      final otherName = isCreator
+          ? (request.assignedVolunteerNames.firstOrNull ?? 'Volunteer')
+          : (request.requesterName.isNotEmpty
+              ? request.requesterName
+              : 'Requester');
+
+      Navigator.of(context).push(MaterialPageRoute<void>(
+        builder: (_) => ChatRoomScreen(
+          requestId: request.id,
+          requestTitle: request.title,
+          requestCategory: request.requestType.name,
+          urgencyLabel: request.urgencyLevel.name.toUpperCase(),
+          currentUserId: currentUserId,
+          otherUserName: otherName,
+          distanceLabel: '—',
+          participantCount: 1 + request.assignedVolunteerIds.length,
+          requestStatus: request.status,
+          messageService: MessageService(),
+        ),
+      ));
+      return;
+    }
+
+    // All other types → request detail screen.
+    final data = RequestDetailData(
+      id: request.id,
+      category: request.requestType.name,
+      urgencyLevel: request.urgencyLevel,
+      title: request.title,
+      distanceKm: 0,
+      minutesAgo: DateTime.now().difference(request.createdAt).inMinutes,
+      requesterName: request.isAnonymous
+          ? 'Anonymous'
+          : (request.requesterName.isNotEmpty
+              ? request.requesterName
+              : 'Requester'),
+      requesterLocation: request.location.address,
+      isAnonymous: request.isAnonymous,
+      isVerified: false,
+      description: request.description,
+      skillsNeeded: const [],
+      lat: request.location.coordinates.latitude,
+      lng: request.location.coordinates.longitude,
+      createdBy: request.createdBy,
+      requestStatus: request.status,
+    );
+
+    context.push(
+      '${AppRoutes.requestDetail}/${request.id}',
+      extra: {'request': data, 'showActions': !isCreator},
+    );
   }
 
   static String _formatTime(DateTime createdAt) {

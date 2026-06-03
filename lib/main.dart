@@ -19,7 +19,7 @@ import 'services/notification_service.dart';
 import 'utils/google_maps_loader.dart';
 
 // flip to false when Firestore notification backend is ready
-const bool useMock = true;
+const bool useMock = false;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
