@@ -1,12 +1,13 @@
-// ignore_for_file: unused_field, unused_element
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 import 'package:we_are_ready/features/chat/widgets/chat_status_banner.dart';
 import 'package:we_are_ready/features/chat/widgets/message_bubble.dart';
 import 'package:we_are_ready/features/chat/widgets/message_input_bar.dart';
-import 'package:we_are_ready/features/chat/widgets/typing_indicator.dart';
-import 'package:we_are_ready/mock/mock_messages.dart';
 import 'package:we_are_ready/models/message_model.dart';
+import 'package:we_are_ready/models/request_model.dart';
+import 'package:we_are_ready/providers/message_provider.dart';
+import 'package:we_are_ready/services/message_service.dart';
 
 // ─── Color palette ────────────────────────────────────────────────────────────
 
@@ -14,23 +15,9 @@ abstract class _C {
   static const background    = Color(0xFF0F0F0F);
   static const surface       = Color(0xFF1A1A1A);
   static const surfaceRaise  = Color(0xFF242424);
-  static const surfaceMid    = Color(0xFF1E1E1E);
   static const accent        = Color(0xFFE8442A);
   static const textPrimary   = Color(0xFFEEEEEE);
   static const textSecondary = Color(0xFF888888);
-  static const textMuted     = Color(0xFF555555);
-  static const senderBlue    = Color(0xFF4A8FCE);
-  static const seenGray      = Color(0xFF555555);
-  static const seenGreen     = Color(0xFF5FA85F);
-  static const locGreen      = Color(0xFF1E2E1E);
-  static const locBorder     = Color(0xFF2A3A2A);
-  static const locText       = Color(0xFF5FA85F);
-  static const closedBg      = Color(0xFF1A1510);
-  static const closedBorder  = Color(0xFF3A2A1A);
-  static const closedText    = Color(0xFF7A5A4A);
-  static const sysBg         = Color(0xFF1E1E1E);
-  static const sysBorder     = Color(0xFF2E2E2E);
-  static const sysText       = Color(0xFF555555);
   static const urgentBadgeBg = Color(0xFF7A4A10);
   static const urgentBadgeFg = Color(0xFFF0A040);
 }
@@ -43,27 +30,6 @@ abstract class _T {
 
   static TextStyle headerSub() => GoogleFonts.ibmPlexSansThai(
         fontSize: 11, fontWeight: FontWeight.w400, color: _C.textSecondary);
-
-  static TextStyle bannerText() => GoogleFonts.ibmPlexSansThai(
-        fontSize: 11, fontWeight: FontWeight.w400, color: _C.textPrimary);
-
-  static TextStyle bubbleBody() => GoogleFonts.ibmPlexSansThai(
-        fontSize: 13, fontWeight: FontWeight.w400, color: _C.textPrimary, height: 1.45);
-
-  static TextStyle bubbleName() => GoogleFonts.ibmPlexSansThai(
-        fontSize: 10, fontWeight: FontWeight.w600, color: _C.senderBlue);
-
-  static TextStyle timestamp() => GoogleFonts.ibmPlexSansThai(
-        fontSize: 10, fontWeight: FontWeight.w400, color: _C.textMuted);
-
-  static TextStyle systemPill() => GoogleFonts.ibmPlexSansThai(
-        fontSize: 10, fontWeight: FontWeight.w400, color: _C.sysText);
-
-  static TextStyle inputText() => GoogleFonts.ibmPlexSansThai(
-        fontSize: 13, fontWeight: FontWeight.w400, color: _C.textPrimary);
-
-  static TextStyle readonlyBar() => GoogleFonts.ibmPlexSansThai(
-        fontSize: 11, fontWeight: FontWeight.w400, color: _C.closedText);
 }
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
@@ -80,8 +46,8 @@ class ChatRoomScreen extends StatefulWidget {
     required this.distanceLabel,
     this.etaLabel,
     required this.participantCount,
-    required this.isReadOnly,
-    this.useMockData = true,
+    required this.requestStatus,
+    required this.messageService,
   });
 
   final String requestId;
@@ -105,79 +71,82 @@ class ChatRoomScreen extends StatefulWidget {
   final String? etaLabel;
 
   final int participantCount;
-  final bool isReadOnly;
 
-  /// Use [MockMessages] data. Flip to false when the backend is wired.
-  final bool useMockData;
+  /// Drives the banner (matched) and read-only state (completed).
+  final RequestStatus requestStatus;
+
+  /// Firestore message service — injected so the screen stays testable.
+  final MessageService messageService;
 
   @override
   State<ChatRoomScreen> createState() => _ChatRoomScreenState();
 }
 
 class _ChatRoomScreenState extends State<ChatRoomScreen> {
-  List<MessageModel> _messages = [];
-  bool _showTyping = false;
+  late final MessageProvider _provider;
   final _scroll = ScrollController();
+  int _prevCount = 0;
+  String? _prevError;
+
+  bool get _isReadOnly => widget.requestStatus == RequestStatus.completed;
 
   @override
   void initState() {
     super.initState();
-    if (widget.useMockData) {
-      _messages = widget.isReadOnly
-          ? MockMessages.closedThread
-          : MockMessages.activeThread;
-      if (!widget.isReadOnly) {
-        Future.delayed(const Duration(milliseconds: 1500), () {
-          if (mounted) setState(() => _showTyping = true);
-        });
-      }
-    } else {
-      // TODO(backend): set useMockData = false and delete mock branch
-      // TODO(backend): final p = context.read<MessageProvider>();
-      // TODO(backend): p.subscribeToMessages(requestId);
-      // TODO(backend): p.subscribeToUnseenCount(requestId, currentUserId);
-      // TODO(backend): p.markAllSeen(requestId, currentUserId);
+    _provider = MessageProvider(widget.messageService);
+    _provider.subscribeToMessages(widget.requestId);
+    _provider.subscribeToUnseenCount(widget.requestId, widget.currentUserId);
+    _provider.addListener(_onUpdate);
+  }
+
+  void _onUpdate() {
+    // Show SnackBar for image/location errors (once per unique error string)
+    final err = _provider.error;
+    if (err != null && err != _prevError) {
+      _prevError = err;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(err),
+            backgroundColor: const Color(0xFFB71C1C),
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      });
     }
-    _scrollToBottom();
+
+    final count = _provider.messages.length;
+    if (count != _prevCount) {
+      _prevCount = count;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _scrollToBottom();
+        if (mounted) {
+          _provider.markAllSeen(widget.requestId, widget.currentUserId);
+        }
+      });
+    }
   }
 
   void _scrollToBottom() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_scroll.hasClients) {
-        _scroll.animateTo(
-          _scroll.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 250),
-          curve: Curves.easeOut,
-        );
-      }
-    });
+    if (_scroll.hasClients && _scroll.position.hasContentDimensions) {
+      _scroll.animateTo(
+        _scroll.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeOut,
+      );
+    }
   }
 
   void _onSend(String text) {
-    // TODO(backend): replace mock append with:
-    // context.read<MessageProvider>().sendText(requestId, currentUserId, text);
-    setState(() {
-      _messages.add(MessageModel(
-        id: 'mock_${DateTime.now().millisecondsSinceEpoch}',
-        senderId: MockMessages.currentUserId,
-        text: text,
-        type: MessageType.message,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-        seenBy: [MockMessages.currentUserId],
-        seenCount: 1,
-      ));
-      _showTyping = false;
-    });
-    _scrollToBottom();
+    _provider.sendText(widget.requestId, widget.currentUserId, text);
   }
 
   @override
   void dispose() {
+    _provider.removeListener(_onUpdate);
+    _provider.dispose();
     _scroll.dispose();
-    if (!widget.useMockData) {
-      // TODO(backend): context.read<MessageProvider>().clearRoom();
-    }
     super.dispose();
   }
 
@@ -185,39 +154,42 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final itemCount = _messages.length + (_showTyping ? 1 : 0);
-
-    return Scaffold(
-      backgroundColor: _C.background,
-      body: Column(
-        children: [
-          _buildHeader(),
-          ChatStatusBanner(isActive: !widget.isReadOnly, etaLabel: widget.etaLabel),
-          Expanded(
-            // TODO(backend): wrap ListView in Consumer<MessageProvider> and use
-            // provider.messages instead of _messages
-            // TODO(backend): use provider.isSending for MessageInputBar.isSending
-            child: ListView.builder(
-              controller: _scroll,
-              reverse: false,
-              shrinkWrap: false,
-              physics: const ClampingScrollPhysics(),
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              itemCount: itemCount,
-              itemBuilder: (_, i) {
-                if (i == _messages.length) return const TypingIndicator();
-                return _buildItem(_messages[i]);
-              },
+    return ChangeNotifierProvider.value(
+      value: _provider,
+      child: Scaffold(
+        backgroundColor: _C.background,
+        body: Column(
+          children: [
+            _buildHeader(),
+            ChatStatusBanner(
+              isActive: widget.requestStatus == RequestStatus.matched,
+              etaLabel: widget.etaLabel,
             ),
-          ),
-          MessageInputBar(
-            isReadOnly: widget.isReadOnly,
-            isSending: false,
-            onSendText: _onSend,
-            onTapCamera: () {},
-            onTapLocation: () {},
-          ),
-        ],
+            Expanded(
+              child: Consumer<MessageProvider>(
+                builder: (_, provider, _) => _buildList(provider),
+              ),
+            ),
+            Consumer<MessageProvider>(
+              builder: (_, provider, _) => MessageInputBar(
+                isReadOnly: _isReadOnly,
+                isSending: provider.isSending,
+                isUploadingImage: provider.isUploadingImage,
+                isFetchingLocation: provider.isFetchingLocation,
+                onSendText: _onSend,
+                onPickImage: (source) => _provider.pickAndSendImage(
+                  requestId: widget.requestId,
+                  senderId: widget.currentUserId,
+                  source: source,
+                ),
+                onSendLocation: () => _provider.sendCurrentLocation(
+                  requestId: widget.requestId,
+                  senderId: widget.currentUserId,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -281,7 +253,49 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     );
   }
 
-  // ─── List item ─────────────────────────────────────────────────────────────
+  // ─── Message list ──────────────────────────────────────────────────────────
+
+  Widget _buildList(MessageProvider provider) {
+    if (provider.isLoading) {
+      return const Center(
+        child: CircularProgressIndicator(color: _C.accent, strokeWidth: 2),
+      );
+    }
+
+    if (provider.error != null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Text(
+            provider.error!,
+            style: const TextStyle(color: _C.textSecondary, fontSize: 14),
+            textAlign: TextAlign.center,
+          ),
+        ),
+      );
+    }
+
+    final msgs = provider.messages;
+
+    if (msgs.isEmpty) {
+      return const Center(
+        child: Text(
+          'No messages yet',
+          style: TextStyle(color: _C.textSecondary, fontSize: 14),
+        ),
+      );
+    }
+
+    return ListView.builder(
+      controller: _scroll,
+      reverse: false,
+      shrinkWrap: false,
+      physics: const ClampingScrollPhysics(),
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      itemCount: msgs.length,
+      itemBuilder: (_, i) => _buildItem(msgs[i]),
+    );
+  }
 
   Widget _buildItem(MessageModel msg) {
     return Padding(
@@ -289,6 +303,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
       child: MessageBubble(
         message: msg,
         currentUserId: widget.currentUserId,
+        senderName: widget.otherUserName,
       ),
     );
   }

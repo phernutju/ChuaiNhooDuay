@@ -51,9 +51,8 @@ class _MapPlaceholderScreenState extends State<MapPlaceholderScreen> {
     final lng = request.location.coordinates.longitude;
     final userLoc = mapProvider.userLocation;
     final dist = userLoc != null
-        ? double.parse(
-            distanceKm(userLoc, LatLng(lat, lng)).toStringAsFixed(1))
-        : 0.0;
+        ? distanceKm(userLoc, LatLng(lat, lng))
+        : null;
 
     final detailData = RequestDetailData(
       id: request.id,
@@ -61,6 +60,7 @@ class _MapPlaceholderScreenState extends State<MapPlaceholderScreen> {
       urgencyLevel: request.urgencyLevel,
       title: request.title,
       minutesAgo: DateTime.now().difference(request.createdAt).inMinutes,
+      postedAt: request.createdAt,
       requesterName: request.isAnonymous ? 'Anonymous' : 'Requester',
       requesterLocation: request.location.address,
       isAnonymous: request.isAnonymous,

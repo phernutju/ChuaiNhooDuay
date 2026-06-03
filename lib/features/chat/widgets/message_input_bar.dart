@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:we_are_ready/features/chat/widgets/media_picker_sheet.dart';
 
 abstract class _C {
   static const surface       = Color(0xFF1A1A1A);
@@ -19,16 +21,20 @@ class MessageInputBar extends StatefulWidget {
     super.key,
     required this.isReadOnly,
     required this.isSending,
+    required this.isUploadingImage,
+    required this.isFetchingLocation,
     required this.onSendText,
-    required this.onTapCamera,
-    required this.onTapLocation,
+    required this.onPickImage,
+    required this.onSendLocation,
   });
 
   final bool isReadOnly;
   final bool isSending;
+  final bool isUploadingImage;
+  final bool isFetchingLocation;
   final void Function(String text) onSendText;
-  final VoidCallback onTapCamera;
-  final VoidCallback onTapLocation;
+  final void Function(ImageSource source) onPickImage;
+  final VoidCallback onSendLocation;
 
   @override
   State<MessageInputBar> createState() => _MessageInputBarState();
@@ -54,11 +60,23 @@ class _MessageInputBarState extends State<MessageInputBar> {
   }
 
   void _handleSend() {
+    if (widget.isSending) return;
     final text = _ctrl.text.trim();
     if (text.isEmpty) return;
-    // TODO(backend): disable input while isSending == true (already wired via prop)
     widget.onSendText(text);
     _ctrl.clear();
+  }
+
+  void _openSheet() {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (_) => MediaPickerSheet(
+        onPickGallery: () => widget.onPickImage(ImageSource.gallery),
+        onPickCamera:  () => widget.onPickImage(ImageSource.camera),
+        onSendLocation: widget.onSendLocation,
+      ),
+    );
   }
 
   @override
@@ -93,86 +111,135 @@ class _MessageInputBarState extends State<MessageInputBar> {
       );
     }
 
-    final canSend = _hasText && !widget.isSending;
+    final isBusy = widget.isUploadingImage || widget.isFetchingLocation;
+    final canSend = _hasText && !widget.isSending && !isBusy;
 
-    return Container(
-      decoration: const BoxDecoration(
-        color: _C.surface,
-        border: Border(top: BorderSide(color: _C.sysBorder, width: 0.5)),
-      ),
-      child: SafeArea(
-        top: false,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              IconButton(
-                icon: const Icon(Icons.camera_alt_outlined, size: 20),
-                color: _C.textSecondary,
-                onPressed: widget.onTapCamera,
-              ),
-              IconButton(
-                icon: const Icon(Icons.location_on_outlined, size: 20),
-                color: _C.textSecondary,
-                onPressed: widget.onTapLocation,
-              ),
-              Expanded(
-                child: TextField(
-                  controller: _ctrl,
-                  style: GoogleFonts.ibmPlexSansThai(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w400,
-                    color: _C.textPrimary,
+    return Opacity(
+      opacity: isBusy ? 0.5 : 1.0,
+      child: AbsorbPointer(
+        absorbing: isBusy,
+        child: Container(
+          decoration: const BoxDecoration(
+            color: _C.surface,
+            border: Border(top: BorderSide(color: _C.sysBorder, width: 0.5)),
+          ),
+          child: SafeArea(
+            top: false,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  // Camera → opens media sheet
+                  IconButton(
+                    icon: const Icon(Icons.camera_alt_outlined, size: 20),
+                    color: _C.textSecondary,
+                    onPressed: _openSheet,
                   ),
-                  decoration: InputDecoration(
-                    hintText: 'Type a message…',
-                    hintStyle: GoogleFonts.ibmPlexSansThai(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w400,
-                      color: _C.textMuted,
-                    ),
-                    filled: true,
-                    fillColor: _C.surfaceRaise,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(20),
-                      borderSide: const BorderSide(color: _C.sysBorder, width: 0.5),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(20),
-                      borderSide: const BorderSide(color: _C.sysBorder, width: 0.5),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(20),
-                      borderSide: const BorderSide(color: _C.sysBorder, width: 0.5),
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 10,
-                    ),
-                    isDense: true,
+                  // Location — direct shortcut; spinner when fetching
+                  SizedBox(
+                    width: 40,
+                    height: 40,
+                    child: widget.isFetchingLocation
+                        ? const Center(
+                            child: SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: _C.textSecondary,
+                              ),
+                            ),
+                          )
+                        : IconButton(
+                            padding: EdgeInsets.zero,
+                            icon: const Icon(
+                              Icons.location_on_outlined,
+                              size: 20,
+                            ),
+                            color: _C.textSecondary,
+                            onPressed: widget.onSendLocation,
+                          ),
                   ),
-                  maxLines: null,
-                  textInputAction: TextInputAction.newline,
-                  keyboardAppearance: Brightness.dark,
-                  onSubmitted: (_) => _handleSend(),
-                ),
-              ),
-              const SizedBox(width: 8),
-              GestureDetector(
-                onTap: canSend ? _handleSend : null,
-                child: CircleAvatar(
-                  radius: 17,
-                  backgroundColor:
-                      canSend ? _C.accent : _C.accent.withValues(alpha: 0.35),
-                  child: const Icon(
-                    Icons.arrow_upward,
-                    color: Colors.white,
-                    size: 15,
+                  Expanded(
+                    child: TextField(
+                      controller: _ctrl,
+                      enabled: !widget.isSending && !isBusy,
+                      style: GoogleFonts.ibmPlexSansThai(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w400,
+                        color: _C.textPrimary,
+                      ),
+                      decoration: InputDecoration(
+                        hintText: 'Type a message…',
+                        hintStyle: GoogleFonts.ibmPlexSansThai(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w400,
+                          color: _C.textMuted,
+                        ),
+                        filled: true,
+                        fillColor: _C.surfaceRaise,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(20),
+                          borderSide:
+                              const BorderSide(color: _C.sysBorder, width: 0.5),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(20),
+                          borderSide:
+                              const BorderSide(color: _C.sysBorder, width: 0.5),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(20),
+                          borderSide:
+                              const BorderSide(color: _C.sysBorder, width: 0.5),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 10,
+                        ),
+                        isDense: true,
+                      ),
+                      maxLines: null,
+                      textInputAction: TextInputAction.newline,
+                      keyboardAppearance: Brightness.dark,
+                      onSubmitted: (_) => _handleSend(),
+                    ),
                   ),
-                ),
+                  const SizedBox(width: 8),
+                  // Send button — spinner while uploading image
+                  widget.isUploadingImage
+                      ? const SizedBox(
+                          width: 34,
+                          height: 34,
+                          child: Center(
+                            child: SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: _C.accent,
+                              ),
+                            ),
+                          ),
+                        )
+                      : GestureDetector(
+                          onTap: canSend ? _handleSend : null,
+                          child: CircleAvatar(
+                            radius: 17,
+                            backgroundColor: canSend
+                                ? _C.accent
+                                : _C.accent.withValues(alpha: 0.35),
+                            child: const Icon(
+                              Icons.arrow_upward,
+                              color: Colors.white,
+                              size: 15,
+                            ),
+                          ),
+                        ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),

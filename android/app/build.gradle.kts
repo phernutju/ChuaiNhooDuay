@@ -49,6 +49,39 @@ android {
             signingConfig = signingConfigs.getByName("debug")
         }
     }
+
+    packaging {
+        resources {
+            excludes += setOf(
+                "META-INF/DEPENDENCIES",
+                "META-INF/LICENSE",
+                "META-INF/LICENSE.txt",
+                "META-INF/NOTICE",
+                "META-INF/NOTICE.txt",
+                "META-INF/ASL2.0",
+                "META-INF/*.kotlin_module",
+                "META-INF/versions/**",
+                "google/protobuf/*.proto",
+                "META-INF/proguard/*.pro",
+                "javax.annotation/**",
+                "META-INF/com.android.tools/**",
+            )
+            pickFirsts += setOf(
+                "META-INF/services/*",
+                "protobuf.meta",
+                "google/protobuf/**",
+            )
+        }
+    }
+}
+
+configurations.all {
+    resolutionStrategy {
+        force("com.google.guava:guava:32.1.3-android")
+        force("com.google.guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava")
+        force("com.google.j2objc:j2objc-annotations:2.8")
+        force("com.google.code.findbugs:jsr305:3.0.2")
+    }
 }
 
 flutter {

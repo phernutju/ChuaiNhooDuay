@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart' as pkg_provider;
 
@@ -70,14 +71,51 @@ class VolunteerFeedScreen extends ConsumerStatefulWidget {
 
 class _VolunteerFeedScreenState extends ConsumerState<VolunteerFeedScreen> {
   _FeedFilter _filter = _FeedFilter.all;
+  Position? _userPosition;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPosition();
+  }
+
+  Future<void> _loadPosition() async {
+    var permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+    }
+    if (permission == LocationPermission.denied ||
+        permission == LocationPermission.deniedForever) {
+      return;
+    }
+    try {
+      final pos = await Geolocator.getCurrentPosition();
+      if (mounted) setState(() => _userPosition = pos);
+    } catch (_) {}
+  }
+
+  double? _distanceKm(double lat, double lng) {
+    if (_userPosition == null) return null;
+    return Geolocator.distanceBetween(
+          _userPosition!.latitude,
+          _userPosition!.longitude,
+          lat,
+          lng,
+        ) /
+        1000;
+  }
 
   RequestDetailData _toDetailData(RequestModel r) => RequestDetailData(
         id: r.id,
         category: r.requestType.name,
         urgencyLevel: r.urgencyLevel,
         title: r.title,
-        distanceKm: 0,
+        distanceKm: _distanceKm(
+          r.location.coordinates.latitude,
+          r.location.coordinates.longitude,
+        ),
         minutesAgo: DateTime.now().difference(r.createdAt).inMinutes,
+        postedAt: r.createdAt,
         requesterName: r.isAnonymous
             ? 'Anonymous'
             : (r.requesterName.isNotEmpty ? r.requesterName : 'Requester'),
@@ -88,6 +126,8 @@ class _VolunteerFeedScreenState extends ConsumerState<VolunteerFeedScreen> {
         skillsNeeded: const [],
         lat: r.location.coordinates.latitude,
         lng: r.location.coordinates.longitude,
+        createdBy: r.createdBy,
+        requestStatus: r.status,
       );
 
   void _showRoleSheet() {

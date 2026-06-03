@@ -272,6 +272,7 @@ class _Body extends StatelessWidget {
 
     final msgs = provider.messages;
     if (msgs.isEmpty && !isOtherTyping) {
+      
       return Center(child: Text('No messages yet', style: _T.headerSub()));
     }
 

@@ -5,8 +5,9 @@ class RequestDetailData {
   final String category;
   final UrgencyLevel urgencyLevel;
   final String title;
-  final double distanceKm;
+  final double? distanceKm;
   final int minutesAgo;
+  final DateTime postedAt;
   final String requesterName;
   final String requesterLocation;
   final bool isAnonymous;
@@ -15,6 +16,8 @@ class RequestDetailData {
   final List<String> skillsNeeded;
   final double lat;
   final double lng;
+  final String createdBy;
+  final RequestStatus requestStatus;
 
   const RequestDetailData({
     required this.id,
@@ -23,6 +26,7 @@ class RequestDetailData {
     required this.title,
     required this.distanceKm,
     required this.minutesAgo,
+    required this.postedAt,
     required this.requesterName,
     required this.requesterLocation,
     required this.isAnonymous,
@@ -31,6 +35,8 @@ class RequestDetailData {
     required this.skillsNeeded,
     required this.lat,
     required this.lng,
+    this.createdBy = '',
+    this.requestStatus = RequestStatus.waiting,
   });
 }
 

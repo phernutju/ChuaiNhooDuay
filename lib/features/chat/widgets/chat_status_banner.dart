@@ -10,8 +10,6 @@ abstract class _C {
 
 /// Pulsing-dot status row.
 /// Returns [SizedBox.shrink] immediately when [isActive] is false.
-// TODO(backend): derive isActive from RequestModel.status == RequestStatus.assigned
-// TODO(backend): derive etaLabel from request metadata or volunteer location
 class ChatStatusBanner extends StatefulWidget {
   const ChatStatusBanner({
     super.key,

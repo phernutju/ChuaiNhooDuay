@@ -74,6 +74,14 @@ class RequesterController extends StateNotifier<RequesterState> {
   void toggleAnonymous() =>
       state = state.copyWith(isAnonymous: !state.isAnonymous);
 
+  void setManualLocation(double lat, double lng, String address) {
+    state = state.copyWith(
+      coordinates: GeoPoint(lat, lng),
+      locationAddress: address,
+      error: null,
+    );
+  }
+
   Future<void> fetchCurrentLocation() async {
     state = state.copyWith(isLocationLoading: true, error: null);
     try {

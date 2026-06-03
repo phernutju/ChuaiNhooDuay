@@ -416,8 +416,9 @@ class _RequestCard extends StatelessWidget {
         category: request.requestType.name,
         urgencyLevel: request.urgencyLevel,
         title: request.title,
-        distanceKm: 0,
+        distanceKm: null,
         minutesAgo: DateTime.now().difference(request.createdAt).inMinutes,
+        postedAt: request.createdAt,
         requesterName: request.isAnonymous ? 'Anonymous'
             : (request.requesterName.isNotEmpty ? request.requesterName : 'You'),
         requesterLocation: request.location.address,
@@ -427,6 +428,8 @@ class _RequestCard extends StatelessWidget {
         skillsNeeded: const [],
         lat: request.location.coordinates.latitude,
         lng: request.location.coordinates.longitude,
+        createdBy: request.createdBy,
+        requestStatus: request.status,
       );
 
   // Urgency: color + bg

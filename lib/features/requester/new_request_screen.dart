@@ -14,6 +14,43 @@ class NewRequestScreen extends ConsumerStatefulWidget {
 
 class _NewRequestScreenState extends ConsumerState<NewRequestScreen> {
   final _descController = TextEditingController();
+  final _latController = TextEditingController();
+  final _lngController = TextEditingController();
+
+  static const _latMin = -90.0;
+  static const _latMax = 90.0;
+  static const _lngMin = -180.0;
+  static const _lngMax = 180.0;
+
+  static bool _isValidLat(String s) {
+    final v = double.tryParse(s);
+    return v != null && v >= _latMin && v <= _latMax;
+  }
+
+  static bool _isValidLng(String s) {
+    final v = double.tryParse(s);
+    return v != null && v >= _lngMin && v <= _lngMax;
+  }
+
+  bool get _coordsValid =>
+      _isValidLat(_latController.text) && _isValidLng(_lngController.text);
+
+  void _trySetManualFromFields() {
+    final lat = double.tryParse(_latController.text);
+    final lng = double.tryParse(_lngController.text);
+    if (lat != null &&
+        lng != null &&
+        lat >= _latMin &&
+        lat <= _latMax &&
+        lng >= _lngMin &&
+        lng <= _lngMax) {
+      ref.read(requesterControllerProvider.notifier).setManualLocation(
+            lat,
+            lng,
+            '${lat.toStringAsFixed(5)}, ${lng.toStringAsFixed(5)}',
+          );
+    }
+  }
 
   @override
   void initState() {
@@ -26,6 +63,8 @@ class _NewRequestScreenState extends ConsumerState<NewRequestScreen> {
   @override
   void dispose() {
     _descController.dispose();
+    _latController.dispose();
+    _lngController.dispose();
     super.dispose();
   }
 
@@ -55,6 +94,18 @@ class _NewRequestScreenState extends ConsumerState<NewRequestScreen> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(requesterControllerProvider);
+
+    ref.listen<RequesterState>(requesterControllerProvider, (prev, next) {
+      if (next.coordinates != null && prev?.coordinates != next.coordinates) {
+        final newLat = next.coordinates!.latitude.toStringAsFixed(5);
+        final newLng = next.coordinates!.longitude.toStringAsFixed(5);
+        if (_latController.text != newLat || _lngController.text != newLng) {
+          _latController.text = newLat;
+          _lngController.text = newLng;
+          setState(() {});
+        }
+      }
+    });
 
     return Scaffold(
       backgroundColor: kBgColor,
@@ -102,11 +153,28 @@ class _NewRequestScreenState extends ConsumerState<NewRequestScreen> {
             _SectionHeader(number: '4', title: 'Location'),
             const SizedBox(height: 12),
             _LocationCard(state: state),
+            const SizedBox(height: 8),
+            _LatLngFields(
+              latController: _latController,
+              lngController: _lngController,
+              latError: _latController.text.isNotEmpty &&
+                  !_isValidLat(_latController.text),
+              lngError: _lngController.text.isNotEmpty &&
+                  !_isValidLng(_lngController.text),
+              onChanged: () {
+                setState(() {});
+                _trySetManualFromFields();
+              },
+            ),
             const SizedBox(height: 32),
           ],
         ),
       ),
-      bottomNavigationBar: _SubmitBar(state: state, onSubmit: _submit),
+      bottomNavigationBar: _SubmitBar(
+        state: state,
+        onSubmit: _submit,
+        coordsValid: _coordsValid,
+      ),
     );
   }
 }
@@ -403,10 +471,122 @@ class _LocationCard extends ConsumerWidget {
 }
 
 
+class _LatLngFields extends StatelessWidget {
+  final TextEditingController latController;
+  final TextEditingController lngController;
+  final bool latError;
+  final bool lngError;
+  final VoidCallback onChanged;
+
+  static const _latLabel = 'Latitude';
+  static const _lngLabel = 'Longitude';
+  static const _latHint = '-90 to 90';
+  static const _lngHint = '-180 to 180';
+  static const _latErrMsg = 'Must be -90 to 90';
+  static const _lngErrMsg = 'Must be -180 to 180';
+
+  const _LatLngFields({
+    required this.latController,
+    required this.lngController,
+    required this.latError,
+    required this.lngError,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          child: _CoordField(
+            controller: latController,
+            label: _latLabel,
+            hint: _latHint,
+            errorText: latError ? _latErrMsg : null,
+            onChanged: (_) => onChanged(),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: _CoordField(
+            controller: lngController,
+            label: _lngLabel,
+            hint: _lngHint,
+            errorText: lngError ? _lngErrMsg : null,
+            onChanged: (_) => onChanged(),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _CoordField extends StatelessWidget {
+  final TextEditingController controller;
+  final String label;
+  final String hint;
+  final String? errorText;
+  final ValueChanged<String> onChanged;
+
+  const _CoordField({
+    required this.controller,
+    required this.label,
+    required this.hint,
+    this.errorText,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final hasError = errorText != null;
+    return TextField(
+      controller: controller,
+      keyboardType: const TextInputType.numberWithOptions(
+        signed: true,
+        decimal: true,
+      ),
+      style: TextStyle(color: Colors.white, fontSize: 13),
+      decoration: InputDecoration(
+        labelText: label,
+        labelStyle: TextStyle(color: kTextSecondary, fontSize: 12),
+        hintText: hint,
+        hintStyle: TextStyle(color: kTextSecondary, fontSize: 12),
+        errorText: errorText,
+        errorStyle: TextStyle(color: kCriticalColor, fontSize: 10),
+        filled: true,
+        fillColor: kCardColor,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: kBorderColor),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(
+              color: hasError ? kCriticalColor : kBorderColor),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(
+              color: hasError ? kCriticalColor : kPrimaryBlue),
+        ),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      ),
+      onChanged: onChanged,
+    );
+  }
+}
+
 class _SubmitBar extends StatelessWidget {
   final RequesterState state;
   final VoidCallback onSubmit;
-  const _SubmitBar({required this.state, required this.onSubmit});
+  final bool coordsValid;
+  const _SubmitBar({
+    required this.state,
+    required this.onSubmit,
+    this.coordsValid = true,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -417,7 +597,7 @@ class _SubmitBar extends StatelessWidget {
           width: double.infinity,
           height: 52,
           child: ElevatedButton(
-            onPressed: state.canSubmit ? onSubmit : null,
+            onPressed: (state.canSubmit && coordsValid) ? onSubmit : null,
             style: ElevatedButton.styleFrom(
               backgroundColor: kCriticalColor,
               disabledBackgroundColor: kCardColor,
