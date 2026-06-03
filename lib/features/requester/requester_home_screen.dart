@@ -89,7 +89,7 @@ class RequesterHomeScreen extends ConsumerWidget {
               IconButton(
                 icon: const Icon(Icons.notifications_outlined,
                     color: Colors.white70),
-                onPressed: () {},
+                onPressed: () => context.go(AppRoutes.notifications),
               ),
               IconButton(
                 icon: const Icon(Icons.swap_horiz, color: Colors.white70),
