@@ -3,14 +3,13 @@ import 'package:flutter/foundation.dart';
 import 'app_lock_service.dart';
 
 class AppLockProvider extends ChangeNotifier {
-  AppLockProvider(this._service) {
-    _init();
-  }
+  AppLockProvider(this._service);
 
   final AppLockService _service;
+  String? _uid;
 
   bool _initialized = false;
-  bool _locked = true; // always locked at cold start
+  bool _locked = true;
   bool _hasPin = false;
   bool _biometricEnabled = false;
   bool _biometricAvailable = false;
@@ -21,9 +20,14 @@ class AppLockProvider extends ChangeNotifier {
   bool get biometricEnabled => _biometricEnabled;
   bool get biometricAvailable => _biometricAvailable;
 
-  Future<void> _init() async {
-    _hasPin = await _service.hasPin();
-    _biometricEnabled = await _service.getBiometricEnabled();
+  Future<void> initForUser(String uid) async {
+    print('initForUser called with uid: $uid');
+    if (_uid == uid && _initialized) return;
+    _uid = uid;
+    _initialized = false;
+    _locked = true;
+    _hasPin = await _service.hasPin(uid);
+    _biometricEnabled = await _service.getBiometricEnabled(uid);
     _biometricAvailable = await _service.isBiometricAvailable();
     _initialized = true;
     notifyListeners();
@@ -35,7 +39,8 @@ class AppLockProvider extends ChangeNotifier {
   }
 
   Future<bool> unlockWithPin(String pin) async {
-    if (!await _service.verifyPin(pin)) return false;
+    if (_uid == null) return false;
+    if (!await _service.verifyPin(pin, _uid!)) return false;
     _locked = false;
     notifyListeners();
     return true;
@@ -48,21 +53,22 @@ class AppLockProvider extends ChangeNotifier {
     return true;
   }
 
-  /// Saves the PIN hash, marks the PIN as set, and unlocks the session.
-  /// Works for first-time setup, forgot-PIN reset, and settings change.
   Future<void> setPin(String pin) async {
-    await _service.setPin(pin);
+    if (_uid == null) return;
+    await _service.setPin(pin, _uid!);
     _hasPin = true;
     _locked = false;
     notifyListeners();
   }
 
-  /// Verifies [pin] against the stored hash without changing any lock state.
-  /// Used by the "Change PIN" flow to confirm the user knows the current PIN.
-  Future<bool> verifyCurrentPin(String pin) => _service.verifyPin(pin);
+  Future<bool> verifyCurrentPin(String pin) {
+    if (_uid == null) return Future.value(false);
+    return _service.verifyPin(pin, _uid!);
+  }
 
   Future<void> setBiometricEnabled(bool value) async {
-    await _service.setBiometricEnabled(value);
+    if (_uid == null) return;
+    await _service.setBiometricEnabled(value, _uid!);
     _biometricEnabled = value;
     notifyListeners();
   }

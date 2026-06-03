@@ -7,7 +7,10 @@ import '../../constants/constants.dart';
 import '../../providers/providers.dart';
 import '../widgets/app_widgets.dart';
 
-/// Hero landing screen: brand, stats, and phone-number entry.
+/// Brand orange accent used across the landing hero.
+const Color _kAccent = Color(0xFFE8471A);
+
+/// Hero landing screen: brand, network pill, feature highlights, and phone-number entry.
 class PhoneScreen extends StatefulWidget {
   const PhoneScreen({super.key});
 
@@ -70,10 +73,21 @@ class _PhoneScreenState extends State<PhoneScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _brandHeader(),
-              const SizedBox(height: 36),
-              const Text(
-                'Help someone within walking range.',
-                style: TextStyle(
+              const SizedBox(height: 28),
+              const _NetworkPill(),
+              const SizedBox(height: 20),
+              Text.rich(
+                TextSpan(
+                  children: const [
+                    TextSpan(text: 'Help someone within '),
+                    TextSpan(
+                      text: 'walking',
+                      style: TextStyle(color: _kAccent),
+                    ),
+                    TextSpan(text: ' range.'),
+                  ],
+                ),
+                style: const TextStyle(
                   color: AppColors.textPrimary,
                   fontSize: 32,
                   height: 1.15,
@@ -92,16 +106,26 @@ class _PhoneScreenState extends State<PhoneScreen> {
                 ),
               ),
               const SizedBox(height: 28),
-              Row(
-                children: const [
-                  _StatCard(value: '12,847', label: 'Volunteers\nonline'),
-                  SizedBox(width: 12),
-                  _StatCard(value: '283', label: 'Requests\ntoday'),
-                  SizedBox(width: 12),
-                  _StatCard(value: '< 4 min', label: 'Median\nresponse'),
-                ],
+              const _FeatureRow(
+                icon: Icons.people_outline,
+                bold: 'Switch roles anytime',
+                rest: ' — volunteer or civilian',
               ),
-              const SizedBox(height: 36),
+              const SizedBox(height: 18),
+              const _FeatureRow(
+                icon: Icons.location_on_outlined,
+                bold: 'Live map',
+                rest: ' — see requests near you',
+              ),
+              const SizedBox(height: 18),
+              const _FeatureRow(
+                icon: Icons.chat_bubble_outline,
+                bold: 'In-app chat',
+                rest: ' — coordinate in real time',
+              ),
+              const SizedBox(height: 28),
+              const Divider(color: AppColors.border, height: 1, thickness: 1),
+              const SizedBox(height: 28),
               const Text(
                 'Enter your phone number to continue',
                 style: TextStyle(
@@ -214,45 +238,114 @@ class _PhoneScreenState extends State<PhoneScreen> {
   }
 }
 
-class _StatCard extends StatelessWidget {
-  const _StatCard({required this.value, required this.label});
+/// Pill/tag at the top of the hero with a softly pulsing orange dot.
+class _NetworkPill extends StatefulWidget {
+  const _NetworkPill();
 
-  final String value;
-  final String label;
+  @override
+  State<_NetworkPill> createState() => _NetworkPillState();
+}
+
+class _NetworkPillState extends State<_NetworkPill>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _pulse = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 1100),
+  )..repeat(reverse: true);
+
+  @override
+  void dispose() {
+    _pulse.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: AppColors.border),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              value,
-              style: const TextStyle(
-                color: AppColors.textPrimary,
-                fontSize: 20,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: const TextStyle(
-                color: AppColors.textMuted,
-                fontSize: 11,
-                height: 1.3,
-              ),
-            ),
-          ],
-        ),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppSpacing.radiusPill),
+        border: Border.all(color: AppColors.border),
       ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          FadeTransition(
+            opacity: Tween<double>(begin: 0.35, end: 1).animate(_pulse),
+            child: Container(
+              width: 8,
+              height: 8,
+              decoration: const BoxDecoration(
+                color: _kAccent,
+                shape: BoxShape.circle,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          const Text(
+            'Real-time volunteer network',
+            style: TextStyle(
+              color: _kAccent,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// A single feature highlight: small icon box followed by bold + muted text.
+class _FeatureRow extends StatelessWidget {
+  const _FeatureRow({
+    required this.icon,
+    required this.bold,
+    required this.rest,
+  });
+
+  final IconData icon;
+  final String bold;
+  final String rest;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Container(
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+            border: Border.all(color: AppColors.border),
+          ),
+          child: Icon(icon, color: _kAccent, size: 18),
+        ),
+        const SizedBox(width: 14),
+        Expanded(
+          child: Text.rich(
+            TextSpan(
+              children: [
+                TextSpan(
+                  text: bold,
+                  style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                TextSpan(
+                  text: rest,
+                  style: const TextStyle(color: AppColors.textSecondary),
+                ),
+              ],
+            ),
+            style: const TextStyle(fontSize: 14, height: 1.3),
+          ),
+        ),
+      ],
     );
   }
 }

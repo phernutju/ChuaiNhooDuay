@@ -68,7 +68,8 @@ class AuthProvider extends ChangeNotifier {
     _firebaseUser = user;
     if (user != null) {
       try {
-        _userModel = await _userService.getUser(user.uid);
+        await user.getIdToken(true);
+        _userModel = await _retryGetUser(user.uid);
       } catch (_) {
         _userModel = null;
       }
@@ -77,6 +78,23 @@ class AuthProvider extends ChangeNotifier {
     }
     _initialized = true;
     notifyListeners();
+  }
+
+  Future<UserModel?> _retryGetUser(String uid, {int attempts = 5}) async {
+    for (var i = 0; i < attempts; i++) {
+      try {
+        return await _userService.getUser(uid);
+      } catch (e) {
+        final isPermissionDenied = e.toString().contains('permission-denied');
+        if (isPermissionDenied && i < attempts - 1) {
+          await Future.delayed(Duration(milliseconds: 600 * (i + 1)));
+          await _firebaseUser?.getIdToken(true);
+          continue;
+        }
+        break;
+      }
+    }
+    return null;
   }
 
   /// Begins (or resends) SMS verification for [phoneNumber] (E.164 format).

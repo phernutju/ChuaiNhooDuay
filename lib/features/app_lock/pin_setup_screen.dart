@@ -114,8 +114,12 @@ class _PinSetupScreenState extends State<PinSetupScreen> {
       return;
     }
     setState(() => _saving = true);
-    await context.read<AppLockProvider>().setPin(_firstPin!);
-    widget.onComplete?.call();
+    try {
+      await context.read<AppLockProvider>().setPin(_firstPin!);
+      widget.onComplete?.call();
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
   }
 
   Widget _pinBox(int index) {
