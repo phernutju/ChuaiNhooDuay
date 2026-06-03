@@ -6,6 +6,7 @@ import 'package:we_are_ready/constants/constants.dart';
 import 'package:we_are_ready/features/map/nearby_requests_map.dart';
 import 'package:we_are_ready/features/widgets/app_widgets.dart';
 import 'package:we_are_ready/utils/check_in_service.dart';
+import 'package:we_are_ready/utils/time_ago.dart';
 import 'package:we_are_ready/features/request_detail/mock/request_mock_data.dart';
 import 'package:we_are_ready/features/chat/chat_room_screen.dart';
 import 'package:we_are_ready/services/message_service.dart';
@@ -87,7 +88,7 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
         otherUserName: _isCreator
             ? 'Volunteer'
             : widget.request.requesterName,
-        distanceLabel: '${widget.request.distanceKm} km away',
+        distanceLabel: formatDistance(widget.request.distanceKm),
         participantCount: 2,
         requestStatus: joined
             ? RequestStatus.matched
@@ -265,7 +266,7 @@ class _TitleSection extends StatelessWidget {
         Text(request.title, style: AppTextStyles.headlineLarge),
         const SizedBox(height: AppSpacing.sm),
         Text(
-          '◎ ${request.distanceKm} km away  ·  ⏱ ${request.minutesAgo}m ago',
+          '◎ ${formatDistance(request.distanceKm)}  ·  ⏱ ${formatTimeAgo(request.postedAt)}',
           style: AppTextStyles.bodySmall,
         ),
       ],
