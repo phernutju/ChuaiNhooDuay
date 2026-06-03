@@ -88,6 +88,8 @@ class _VolunteerFeedScreenState extends ConsumerState<VolunteerFeedScreen> {
         skillsNeeded: const [],
         lat: r.location.coordinates.latitude,
         lng: r.location.coordinates.longitude,
+        createdBy: r.createdBy,
+        requestStatus: r.status,
       );
 
   void _showRoleSheet() {

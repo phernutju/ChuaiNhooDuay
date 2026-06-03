@@ -4,6 +4,13 @@
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <!-- local_auth: biometric unlock -->
     <uses-permission android:name="android.permission.USE_BIOMETRIC" />
+    <!-- image_picker: camera capture -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <!-- image_picker: gallery access (Android 13+) -->
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    <!-- image_picker: gallery access (Android ≤ 12) -->
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="29" />
 
     <application
         android:label="ChuayNooDuay"

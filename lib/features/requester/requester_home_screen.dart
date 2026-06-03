@@ -427,6 +427,8 @@ class _RequestCard extends StatelessWidget {
         skillsNeeded: const [],
         lat: request.location.coordinates.latitude,
         lng: request.location.coordinates.longitude,
+        createdBy: request.createdBy,
+        requestStatus: request.status,
       );
 
   // Urgency: color + bg

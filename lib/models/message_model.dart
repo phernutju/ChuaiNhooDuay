@@ -7,6 +7,7 @@ class MessageModel {
   final String senderId;
   final String? text;
   final String? imageUrl;
+  final String? locationAddress;
   final MessageType type;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -18,6 +19,7 @@ class MessageModel {
     required this.senderId,
     this.text,
     this.imageUrl,
+    this.locationAddress,
     required this.type,
     required this.createdAt,
     required this.updatedAt,
@@ -33,11 +35,12 @@ class MessageModel {
       senderId: data['senderId'] as String,
       text: data['text'] as String?,
       imageUrl: data['imageUrl'] as String?,
+      locationAddress: data['locationAddress'] as String?,
       type: _parseType(data['type'] as String),
       seenCount: data['seenCount'] as int? ?? 0,
       seenBy: data['seenBy'] != null ? List<String>.from(data['seenBy'] as List) : [],
-      createdAt: (data['createdAt'] as Timestamp).toDate(),
-      updatedAt: (data['updatedAt'] as Timestamp).toDate(),
+      createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      updatedAt: (data['updatedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
     );
   }
 
@@ -59,6 +62,7 @@ class MessageModel {
       'senderId': senderId,
       if (text != null) 'text': text,
       if (imageUrl != null) 'imageUrl': imageUrl,
+      if (locationAddress != null) 'locationAddress': locationAddress,
       'type': type.name,
       'seenCount': seenCount,
       'seenBy': seenBy,
@@ -94,6 +98,7 @@ class MessageModel {
   MessageModel copyWith({
     String? text,
     String? imageUrl,
+    String? locationAddress,
     DateTime? updatedAt,
     int? seenCount,
     List<String>? seenBy,
@@ -103,6 +108,7 @@ class MessageModel {
       senderId: senderId,
       text: text ?? this.text,
       imageUrl: imageUrl ?? this.imageUrl,
+      locationAddress: locationAddress ?? this.locationAddress,
       type: type,
       createdAt: createdAt,
       updatedAt: updatedAt ?? this.updatedAt,

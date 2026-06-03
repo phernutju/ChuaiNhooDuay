@@ -8,6 +8,12 @@
 	<!-- geolocator: required alongside WhenInUse on iOS 11+ -->
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>We Are Ready needs your location to show disaster relief requests near you.</string>
+	<!-- image_picker: camera -->
+	<key>NSCameraUsageDescription</key>
+	<string>Used to send photos in a help request chat.</string>
+	<!-- image_picker: photo library -->
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Used to send photos in a help request chat.</string>
 
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>

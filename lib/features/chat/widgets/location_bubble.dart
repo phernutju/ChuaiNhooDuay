@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 abstract class _C {
   static const locGreen  = Color(0xFF1E2E1E);
@@ -9,22 +10,47 @@ abstract class _C {
   static const accent    = Color(0xFFE8442A);
 }
 
+/// Opens the native maps app for [coords] ("lat,lng").
+///
+/// Tries geo: URI first (Android native); falls back to Google Maps web URL.
+// TODO(backend): replace coords with real lat/lng once reverse geocoding is added
+Future<void> _openMaps(String coords) async {
+  final parts = coords.split(',');
+  if (parts.length != 2) return;
+  final lat = parts[0].trim();
+  final lng = parts[1].trim();
+  final geo = Uri.parse('geo:$lat,$lng?q=$lat,$lng');
+  final web = Uri.parse(
+    'https://www.google.com/maps/search/?api=1&query=$lat,$lng',
+  );
+  if (await canLaunchUrl(geo)) {
+    await launchUrl(geo);
+  } else {
+    await launchUrl(web, mode: LaunchMode.externalApplication);
+  }
+}
+
 class LocationBubble extends StatelessWidget {
   const LocationBubble({
     super.key,
-    required this.address,
-    required this.onTap,
+    required this.coords,
+    this.address,
   });
 
-  final String address;
-  // TODO(backend): parse real lat/lng from message payload and launch maps URL
-  // TODO(backend): use url_launcher: launchUrl(Uri.parse('geo:$lat,$lng'))
-  final VoidCallback onTap;
+  /// Raw "lat,lng" string — used to open the maps app.
+  final String coords;
+
+  /// Human-readable address; shown in place of coords when available.
+  final String? address;
 
   @override
   Widget build(BuildContext context) {
+    final displayText = (address != null && address!.isNotEmpty)
+        ? address!
+        : coords;
+
     return GestureDetector(
-      onTap: onTap,
+      onTap: () => _openMaps(coords),
       child: Container(
         clipBehavior: Clip.antiAlias,
         decoration: BoxDecoration(
@@ -57,7 +83,7 @@ class LocationBubble extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    address,
+                    displayText,
                     style: GoogleFonts.ibmPlexSansThai(
                       fontSize: 11,
                       fontWeight: FontWeight.w500,

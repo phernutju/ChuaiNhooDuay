@@ -7,6 +7,8 @@ import 'package:we_are_ready/features/map/nearby_requests_map.dart';
 import 'package:we_are_ready/features/widgets/app_widgets.dart';
 import 'package:we_are_ready/utils/check_in_service.dart';
 import 'package:we_are_ready/features/request_detail/mock/request_mock_data.dart';
+import 'package:we_are_ready/features/chat/chat_room_screen.dart';
+import 'package:we_are_ready/services/message_service.dart';
 import 'package:provider/provider.dart';
 import 'package:we_are_ready/providers/providers.dart';
 import 'package:we_are_ready/services/request_service.dart';
@@ -65,6 +67,36 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
   static const _appBarTitle = 'Request';
   static const _snackBarMsg = "You're helping!";
   static const _arrivedMsg = "You've arrived!";
+
+  bool get _isCreator {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    return uid != null &&
+        uid.isNotEmpty &&
+        uid == widget.request.createdBy;
+  }
+
+  void _openChat({required bool joined}) {
+    final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
+    Navigator.of(context).push(MaterialPageRoute<void>(
+      builder: (_) => ChatRoomScreen(
+        requestId: widget.request.id,
+        requestTitle: widget.request.title,
+        requestCategory: widget.request.category,
+        urgencyLabel: widget.request.urgencyLevel.name.toUpperCase(),
+        currentUserId: uid,
+        otherUserName: _isCreator
+            ? 'Volunteer'
+            : widget.request.requesterName,
+        distanceLabel: '${widget.request.distanceKm} km away',
+        participantCount: 2,
+        requestStatus: joined
+            ? RequestStatus.matched
+            : widget.request.requestStatus,
+        messageService: MessageService(),
+      ),
+    ));
+  }
+
   /// The single place a request joins the volunteer's Active list.
   Future<void> _onHelp() async {
     context.read<JoinedRequestsProvider>().join(widget.request);
@@ -159,12 +191,15 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
               ),
             ),
           ),
-          if (widget.showActions)
+          if (_isCreator)
+            _ChatBar(onChat: () => _openChat(joined: false)),
+          if (!_isCreator && widget.showActions)
             _BottomBar(
               accepted: joined,
               checkedIn: _checkedIn,
               onHelp: _onHelp,
               onCheckIn: _confirmCheckIn,
+              onChat: joined ? () => _openChat(joined: true) : null,
             ),
         ],
       ),
@@ -479,12 +514,14 @@ class _BottomBar extends StatelessWidget {
     required this.checkedIn,
     required this.onHelp,
     required this.onCheckIn,
+    this.onChat,
   });
 
   final bool accepted;
   final bool checkedIn;
   final VoidCallback onHelp;
   final VoidCallback onCheckIn;
+  final VoidCallback? onChat;
 
   static const _helpLabel = "I'll help";
   static const _checkInLabel = 'Check in';
@@ -506,6 +543,52 @@ class _BottomBar extends StatelessWidget {
             ? onCheckIn
             : onHelp;
 
+    final mainBtn = GestureDetector(
+      onTap: tapAction,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        height: 48,
+        decoration: BoxDecoration(
+          color: btnColor,
+          borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+        ),
+        child: Center(
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 200),
+            child: checkedIn
+                ? Row(
+                    key: const ValueKey(2),
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.check_circle, color: Colors.white, size: 20),
+                      const SizedBox(width: AppSpacing.sm),
+                      Text(_checkedInLabel, style: AppTextStyles.button),
+                    ],
+                  )
+                : accepted
+                    ? Row(
+                        key: const ValueKey(1),
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.location_pin, color: Colors.white, size: 20),
+                          const SizedBox(width: AppSpacing.sm),
+                          Text(_checkInLabel, style: AppTextStyles.button),
+                        ],
+                      )
+                    : Row(
+                        key: const ValueKey(0),
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.volunteer_activism, color: Colors.white, size: 20),
+                          const SizedBox(width: AppSpacing.sm),
+                          Text(_helpLabel, style: AppTextStyles.button),
+                        ],
+                      ),
+          ),
+        ),
+      ),
+    );
+
     return Container(
       padding: EdgeInsets.fromLTRB(
         AppSpacing.md,
@@ -515,72 +598,76 @@ class _BottomBar extends StatelessWidget {
       ),
       decoration: const BoxDecoration(
         color: AppColors.background,
-        border: Border(
-          top: BorderSide(color: AppColors.border, width: 0.5),
-        ),
+        border: Border(top: BorderSide(color: AppColors.border, width: 0.5)),
       ),
-      child: Row(
-        children: [
-          Expanded(
-            child: GestureDetector(
-              onTap: tapAction,
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 300),
-                height: 48,
-                decoration: BoxDecoration(
-                  color: btnColor,
-                  borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-                ),
-                child: Center(
-                  child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 200),
-                    child: checkedIn
-                        ? Row(
-                            key: const ValueKey(2),
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(
-                                Icons.check_circle,
-                                color: Colors.white,
-                                size: 20,
-                              ),
-                              const SizedBox(width: AppSpacing.sm),
-                              Text(_checkedInLabel, style: AppTextStyles.button),
-                            ],
-                          )
-                        : accepted
-                            ? Row(
-                                key: const ValueKey(1),
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const Icon(
-                                    Icons.location_pin,
-                                    color: Colors.white,
-                                    size: 20,
-                                  ),
-                                  const SizedBox(width: AppSpacing.sm),
-                                  Text(_checkInLabel, style: AppTextStyles.button),
-                                ],
-                              )
-                            : Row(
-                                key: const ValueKey(0),
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const Icon(
-                                    Icons.volunteer_activism,
-                                    color: Colors.white,
-                                    size: 20,
-                                  ),
-                                  const SizedBox(width: AppSpacing.sm),
-                                  Text(_helpLabel, style: AppTextStyles.button),
-                                ],
-                              ),
+      child: accepted
+          ? Row(
+              children: [
+                GestureDetector(
+                  onTap: onChat,
+                  child: Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: AppColors.surface,
+                      borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+                      border: Border.all(color: AppColors.border, width: 1),
+                    ),
+                    child: const Icon(
+                      Icons.chat_bubble_outline,
+                      color: AppColors.textPrimary,
+                      size: 20,
+                    ),
                   ),
                 ),
-              ),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(child: mainBtn),
+              ],
+            )
+          : Row(
+              children: [Expanded(child: mainBtn)],
             ),
+    );
+  }
+}
+
+class _ChatBar extends StatelessWidget {
+  const _ChatBar({required this.onChat});
+
+  final VoidCallback onChat;
+
+  @override
+  Widget build(BuildContext context) {
+    final bottomInset = MediaQuery.of(context).padding.bottom;
+    return Container(
+      padding: EdgeInsets.fromLTRB(
+        AppSpacing.md,
+        AppSpacing.sm,
+        AppSpacing.md,
+        AppSpacing.md + bottomInset,
+      ),
+      decoration: const BoxDecoration(
+        color: AppColors.background,
+        border: Border(top: BorderSide(color: AppColors.border, width: 0.5)),
+      ),
+      child: GestureDetector(
+        onTap: onChat,
+        child: Container(
+          height: 48,
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+            border: Border.all(color: AppColors.border, width: 1),
           ),
-        ],
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.chat_bubble_outline, color: AppColors.textPrimary, size: 20),
+              const SizedBox(width: AppSpacing.sm),
+              Text('Chat', style: AppTextStyles.button),
+            ],
+          ),
+        ),
       ),
     );
   }

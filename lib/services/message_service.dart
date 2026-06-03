@@ -1,4 +1,9 @@
+import 'dart:io';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:image_picker/image_picker.dart' show XFile;
 import 'package:we_are_ready/models/message_model.dart';
 import 'package:we_are_ready/services/message_exception.dart';
 
@@ -29,12 +34,19 @@ class MessageService {
   // ---------------------------------------------------------------------------
 
   /// Real-time stream of messages for [requestId], ordered by [createdAt] ascending.
+  ///
+  /// Sorting is done in memory so that pending-write documents (whose server
+  /// timestamp is still null) are included immediately — Firestore excludes
+  /// them from `orderBy` queries until the server confirms the timestamp.
   Stream<List<MessageModel>> watchMessages(String requestId) {
     return MessageModel.subcollection(_db, requestId)
-        .orderBy('createdAt')
         .snapshots()
         .map(
-          (snap) => snap.docs.map(MessageModel.fromFirestore).toList(),
+          (snap) {
+            final msgs = snap.docs.map(MessageModel.fromFirestore).toList();
+            msgs.sort((a, b) => a.createdAt.compareTo(b.createdAt));
+            return msgs;
+          },
         )
         .handleError(
           (Object error) {
@@ -63,7 +75,7 @@ class MessageService {
 
   /// Sends a plain text message from [senderId] in [requestId].
   ///
-  /// Throws [MessageException] if [text] is blank or a Firestore write fails.
+  /// Throws [MessageException] if [text] is blank or na Firestore write fails.
   Future<void> sendTextMessage({
     required String requestId,
     required String senderId,
@@ -130,6 +142,77 @@ class MessageService {
     } on FirebaseException catch (e) {
       throw MessageException(
         'Failed to mark message $messageId as seen',
+        cause: e,
+      );
+    }
+  }
+
+  /// Uploads [imageFile] to Firebase Storage then sends a message with [imageUrl].
+  ///
+  /// Path: chat_images/{requestId}/{timestamp}_{filename}
+  Future<void> sendImageMessage({
+    required String requestId,
+    required String senderId,
+    required XFile imageFile,
+    String? caption,
+  }) async {
+    final ref = FirebaseStorage.instance.ref(
+      'chat_images/$requestId/${DateTime.now().millisecondsSinceEpoch}_${imageFile.name}',
+    );
+    final UploadTask uploadTask;
+    if (kIsWeb) {
+      uploadTask = ref.putData(await imageFile.readAsBytes());
+    } else {
+      uploadTask = ref.putFile(File(imageFile.path));
+    }
+    final snapshot = await uploadTask;
+    final imageUrl = await snapshot.ref.getDownloadURL();
+
+    try {
+      await MessageModel.subcollection(_db, requestId).add({
+        'senderId': senderId,
+        if (caption?.trim().isNotEmpty == true) 'text': caption!.trim(),
+        'imageUrl': imageUrl,
+        'type': MessageType.message.name,
+        'seenCount': 0,
+        'seenBy': <String>[],
+        'createdAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    } on FirebaseException catch (e) {
+      throw MessageException(
+        'Failed to send image in request $requestId',
+        cause: e,
+      );
+    }
+  }
+
+  /// Sends current device GPS as a location message.
+  ///
+  /// Stores coords as "lat,lng" in [text]; human-readable [address] goes in
+  /// [locationAddress] (nullable — only set when reverse geocoding is available).
+  Future<void> sendLocationMessage({
+    required String requestId,
+    required String senderId,
+    required double lat,
+    required double lng,
+    String? address,
+  }) async {
+    try {
+      await MessageModel.subcollection(_db, requestId).add({
+        'senderId': senderId,
+        'text': '$lat,$lng',
+        // ignore: use_null_aware_elements
+        if (address != null) 'locationAddress': address,
+        'type': MessageType.location.name,
+        'seenCount': 0,
+        'seenBy': <String>[],
+        'createdAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    } on FirebaseException catch (e) {
+      throw MessageException(
+        'Failed to send location in request $requestId',
         cause: e,
       );
     }

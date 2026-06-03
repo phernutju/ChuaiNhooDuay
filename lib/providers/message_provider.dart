@@ -1,8 +1,13 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:we_are_ready/models/message_model.dart';
+import 'package:we_are_ready/models/request_model.dart';
 import 'package:we_are_ready/services/message_service.dart';
+import 'package:we_are_ready/services/notification_service.dart';
+import 'package:we_are_ready/services/request_service.dart';
 
 /// Manages real-time message state for a single active request room.
 ///
@@ -10,13 +15,22 @@ import 'package:we_are_ready/services/message_service.dart';
 /// the chat screen, and [clearRoom] (or let [dispose] handle it) on exit.
 class MessageProvider extends ChangeNotifier {
   final MessageService _messageService;
+  final NotificationService _notificationService;
+  final RequestService _requestService;
 
-  MessageProvider(this._messageService);
+  MessageProvider(
+    this._messageService, {
+    NotificationService? notificationService,
+    RequestService? requestService,
+  })  : _notificationService = notificationService ?? NotificationService(),
+        _requestService = requestService ?? RequestService();
 
   List<MessageModel> messages = [];
   int unseenCount = 0;
   bool isSending = false;
   bool isLoading = false;
+  bool isUploadingImage = false;
+  bool isFetchingLocation = false;
   String? error;
 
   StreamSubscription<List<MessageModel>>? _messagesSub;
@@ -73,7 +87,8 @@ class MessageProvider extends ChangeNotifier {
 
   /// Sends a plain text message from [senderId] in [requestId].
   ///
-  /// Sets [isSending] during the call and stores any error in [error] on failure.
+  /// Sets [isSending] during the call and stores any error in [error] on
+  /// failure. Triggers a chat notification on success (best-effort).
   Future<void> sendText(
     String requestId,
     String senderId,
@@ -86,6 +101,11 @@ class MessageProvider extends ChangeNotifier {
         requestId: requestId,
         senderId: senderId,
         text: text,
+      );
+      await _triggerChatNotification(
+        requestId: requestId,
+        senderId: senderId,
+        preview: text,
       );
     } catch (e) {
       error = e.toString();
@@ -111,6 +131,98 @@ class MessageProvider extends ChangeNotifier {
     }
   }
 
+  /// Opens image picker, uploads to Storage, and sends the image message.
+  ///
+  /// Returns silently if the user cancels the picker.
+  /// Triggers a chat notification on success (best-effort).
+  Future<void> pickAndSendImage({
+    required String requestId,
+    required String senderId,
+    required ImageSource source,
+    String? caption,
+  }) async {
+    final picker = ImagePicker();
+    final picked = await picker.pickImage(
+      source: source,
+      imageQuality: 72,
+      maxWidth: 1080,
+    );
+    if (picked == null) return;
+
+    isUploadingImage = true;
+    error = null;
+    notifyListeners();
+
+    try {
+      await _messageService.sendImageMessage(
+        requestId: requestId,
+        senderId: senderId,
+        imageFile: picked,
+        caption: caption,
+      );
+      await _triggerChatNotification(
+        requestId: requestId,
+        senderId: senderId,
+        preview: caption ?? '📷 Photo',
+      );
+    } catch (e) {
+      error = 'Failed to send image. Please try again.';
+    } finally {
+      isUploadingImage = false;
+      notifyListeners();
+    }
+  }
+
+  /// Gets device GPS and sends a location message.
+  ///
+  /// Sets [error] to a user-facing string on permission denial or timeout.
+  /// Triggers a chat notification on success (best-effort).
+  Future<void> sendCurrentLocation({
+    required String requestId,
+    required String senderId,
+  }) async {
+    isFetchingLocation = true;
+    error = null;
+    notifyListeners();
+
+    try {
+      var permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
+        error = 'Location permission required';
+        return;
+      }
+
+      final position = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+          timeLimit: Duration(seconds: 10),
+        ),
+      );
+
+      // TODO(backend): reverse geocode position to address using a maps API
+      await _messageService.sendLocationMessage(
+        requestId: requestId,
+        senderId: senderId,
+        lat: position.latitude,
+        lng: position.longitude,
+      );
+      await _triggerChatNotification(
+        requestId: requestId,
+        senderId: senderId,
+        preview: '📍 Location shared',
+      );
+    } catch (e) {
+      error = 'Could not get location. Check permissions.';
+    } finally {
+      isFetchingLocation = false;
+      notifyListeners();
+    }
+  }
+
   // ---------------------------------------------------------------------------
   // Lifecycle
   // ---------------------------------------------------------------------------
@@ -128,6 +240,8 @@ class MessageProvider extends ChangeNotifier {
     unseenCount = 0;
     isSending = false;
     isLoading = false;
+    isUploadingImage = false;
+    isFetchingLocation = false;
     error = null;
   }
 
@@ -135,5 +249,49 @@ class MessageProvider extends ChangeNotifier {
   void dispose() {
     clearRoom();
     super.dispose();
+  }
+
+  // ---------------------------------------------------------------------------
+  // Private helpers
+  // ---------------------------------------------------------------------------
+
+  /// Fetches the request, resolves the sender's display name, and calls
+  /// [NotificationService.notifyChatMessage].
+  ///
+  /// Only triggered for [MessageType.message] and [MessageType.location]
+  /// messages — never for system messages.
+  /// All errors are caught and logged; this method never throws.
+  Future<void> _triggerChatNotification({
+    required String requestId,
+    required String senderId,
+    required String preview,
+  }) async {
+    try {
+      final request = await _requestService.getById(requestId);
+      final senderName = _resolveSenderName(request, senderId);
+      await _notificationService.notifyChatMessage(
+        request,
+        senderName,
+        preview,
+        senderId: senderId,
+      );
+    } catch (e) {
+      // Best-effort — never let notification failure break messaging.
+      debugPrint('[MessageProvider] chat notification failed: $e');
+    }
+  }
+
+  /// Resolves the display name of [senderId] from [request] participant lists.
+  ///
+  /// Returns [request.requesterName] for the request creator,
+  /// the matching entry from [request.assignedVolunteerNames] for a volunteer,
+  /// or `'Someone'` if the sender is not found in either list.
+  String _resolveSenderName(RequestModel request, String senderId) {
+    if (request.createdBy == senderId) return request.requesterName;
+    final i = request.assignedVolunteerIds.indexOf(senderId);
+    if (i != -1 && i < request.assignedVolunteerNames.length) {
+      return request.assignedVolunteerNames[i];
+    }
+    return 'Someone';
   }
 }
