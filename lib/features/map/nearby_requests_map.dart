@@ -193,7 +193,8 @@ class _NearbyRequestsMapState extends State<NearbyRequestsMap> {
               CameraPosition(target: widget.center, zoom: 10),
           markers: _buildMarkers(),
           circles: _buildCircle(),
-          myLocationButtonEnabled: false,
+          myLocationEnabled: true,
+          myLocationButtonEnabled: true,
           cameraTargetBounds: widget.cameraBounds == null
               ? CameraTargetBounds.unbounded
               : CameraTargetBounds(widget.cameraBounds!),

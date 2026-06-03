@@ -6,6 +6,7 @@ import '../../models/user_model.dart';
 import '../../providers/providers.dart';
 import '../../widgets/role_pill.dart';
 import '../../widgets/role_switch_sheet.dart';
+import '../app_lock/app_lock_settings.dart';
 
 /// Stable per-name avatar tint, matching the feed/detail palette.
 Color _avatarColorFromName(String name) {
@@ -203,6 +204,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                 ),
               ),
+              const SizedBox(height: AppSpacing.xl),
+              const AppLockSettings(),
               const SizedBox(height: AppSpacing.xl),
 
               TextButton(

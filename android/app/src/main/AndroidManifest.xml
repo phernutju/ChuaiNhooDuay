@@ -2,6 +2,8 @@
     <!-- geolocator: fine location for GPS fix; coarse as fallback -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <!-- local_auth: biometric unlock -->
+    <uses-permission android:name="android.permission.USE_BIOMETRIC" />
 
     <application
         android:label="ChuayNooDuay"
