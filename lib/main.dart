@@ -45,7 +45,6 @@ class _WeAreReadyAppState extends State<WeAreReadyApp> {
       : FirestoreNotificationDataSource(NotificationService());
 
   late final AuthProvider _auth;
-  late final AppLockProvider _appLock;
   late final GoRouter _router;
   late final NotificationProvider _notifications;
 
@@ -53,7 +52,6 @@ class _WeAreReadyAppState extends State<WeAreReadyApp> {
   void initState() {
     super.initState();
     _auth = AuthProvider();
-    _appLock = AppLockProvider(AppLockService());
     _router = createRouter(_auth);
     _notifications = NotificationProvider(_notificationSource);
   }
@@ -61,7 +59,6 @@ class _WeAreReadyAppState extends State<WeAreReadyApp> {
   @override
   void dispose() {
     _auth.dispose();
-    _appLock.dispose();
     _notifications.dispose();
     super.dispose();
   }
@@ -77,11 +74,25 @@ class _WeAreReadyAppState extends State<WeAreReadyApp> {
         pkg_provider.ChangeNotifierProvider<NotificationProvider>.value(
           value: _notifications,
         ),
-        pkg_provider.ChangeNotifierProvider<MapProvider>(
+        pkg_provider.ChangeNotifierProxyProvider<AuthProvider, MapProvider>(
           create: (_) => MapProvider(),
+          update: (_, auth, map) {
+            if (auth.isAuthenticated && auth.hasProfile) {
+              map!.startListening();
+            }
+            return map!;
+          },
         ),
-        pkg_provider.ChangeNotifierProvider<AppLockProvider>.value(
-          value: _appLock,
+        pkg_provider.ChangeNotifierProxyProvider<AuthProvider, AppLockProvider>(
+          create: (_) => AppLockProvider(AppLockService()),
+          update: (_, auth, appLock) {
+            final uid = auth.userModel?.id;
+            print('AppLockProxy update - uid: $uid');
+            if (uid != null) {
+              appLock!.initForUser(uid);
+            }
+            return appLock!;
+          },
         ),
       ],
       child: pkg_provider.Consumer<AuthProvider>(

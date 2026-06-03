@@ -7,8 +7,10 @@ import '../services/map_service.dart';
 import '../utils/geo_utils.dart';
 
 class MapProvider extends ChangeNotifier {
-  MapProvider({MapService? service}) : _service = service ?? MapService() {
-    _sub = _service.getOpenRequests().listen(_onRequestsUpdated);
+  MapProvider({MapService? service}) : _service = service ?? MapService();
+
+  void startListening() {
+    _sub ??= _service.getOpenRequests().listen(_onRequestsUpdated);
   }
 
   final MapService _service;

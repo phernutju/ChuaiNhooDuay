@@ -126,7 +126,9 @@ class _ForgotPinScreenState extends State<ForgotPinScreen> {
       // OTP verified — let the user set a new PIN.
       // PinSetupScreen.setPin unlocks the gate automatically.
       Navigator.of(context).pushReplacement<void, void>(
-        MaterialPageRoute(builder: (_) => const PinSetupScreen()),
+        MaterialPageRoute(
+          builder: (_) => const PinSetupScreen(),
+        ),
       );
     } else {
       for (final c in _controllers) {

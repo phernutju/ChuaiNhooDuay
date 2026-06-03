@@ -4,16 +4,66 @@ import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:local_auth/local_auth.dart';
+import 'package:web/web.dart' as web;
 
 class AppLockService {
   static const _storage = FlutterSecureStorage(
     aOptions: AndroidOptions(encryptedSharedPreferences: true),
   );
 
-  static const _keyPinHash = 'alp_pin_hash';
-  static const _keyBiometric = 'alp_biometric';
+  String _keyPinHash(String uid) => 'alp_pin_hash_$uid';
+  String _keyBiometric(String uid) => 'alp_biometric_$uid';
 
   final _auth = LocalAuthentication();
+
+  String _hash(String pin) => sha256.convert(utf8.encode(pin)).toString();
+
+  Future<void> setPin(String pin, String uid) async {
+    if (kIsWeb) {
+      web.window.localStorage.setItem(_keyPinHash(uid), _hash(pin));
+      return;
+    }
+    await _storage.write(key: _keyPinHash(uid), value: _hash(pin));
+  }
+
+  Future<bool> verifyPin(String pin, String uid) async {
+    if (kIsWeb) {
+      final stored = web.window.localStorage.getItem(_keyPinHash(uid));
+      return stored != null && stored == _hash(pin);
+    }
+    final stored = await _storage.read(key: _keyPinHash(uid));
+    return stored != null && stored == _hash(pin);
+  }
+
+  Future<bool> hasPin(String uid) async {
+    if (kIsWeb) {
+      return web.window.localStorage.getItem(_keyPinHash(uid)) != null;
+    }
+    return (await _storage.read(key: _keyPinHash(uid))) != null;
+  }
+
+  Future<void> deletePin(String uid) async {
+    if (kIsWeb) {
+      web.window.localStorage.removeItem(_keyPinHash(uid));
+      return;
+    }
+    await _storage.delete(key: _keyPinHash(uid));
+  }
+
+  Future<void> setBiometricEnabled(bool v, String uid) async {
+    if (kIsWeb) {
+      web.window.localStorage.setItem(_keyBiometric(uid), v.toString());
+      return;
+    }
+    await _storage.write(key: _keyBiometric(uid), value: v.toString());
+  }
+
+  Future<bool> getBiometricEnabled(String uid) async {
+    if (kIsWeb) {
+      return web.window.localStorage.getItem(_keyBiometric(uid)) == 'true';
+    }
+    return (await _storage.read(key: _keyBiometric(uid))) == 'true';
+  }
 
   Future<bool> isBiometricAvailable() async {
     if (kIsWeb) return false;
@@ -38,25 +88,4 @@ class AppLockService {
       return false;
     }
   }
-
-  String _hash(String pin) => sha256.convert(utf8.encode(pin)).toString();
-
-  Future<void> setPin(String pin) =>
-      _storage.write(key: _keyPinHash, value: _hash(pin));
-
-  Future<bool> verifyPin(String pin) async {
-    final stored = await _storage.read(key: _keyPinHash);
-    return stored != null && stored == _hash(pin);
-  }
-
-  Future<bool> hasPin() async =>
-      (await _storage.read(key: _keyPinHash)) != null;
-
-  Future<void> deletePin() => _storage.delete(key: _keyPinHash);
-
-  Future<void> setBiometricEnabled(bool v) =>
-      _storage.write(key: _keyBiometric, value: v.toString());
-
-  Future<bool> getBiometricEnabled() async =>
-      (await _storage.read(key: _keyBiometric)) == 'true';
 }

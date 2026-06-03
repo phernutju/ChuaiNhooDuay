@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import '../../constants/constants.dart';
 import '../widgets/app_widgets.dart';
 import 'app_lock_provider.dart';
-import 'forgot_pin_screen.dart';
 import 'pin_setup_screen.dart';
 
 /// "Verify current PIN before changing" screen.
@@ -248,21 +247,6 @@ class _ChangePinScreenState extends State<ChangePinScreen> {
               const Spacer(flex: 2),
               _keypad(),
               const Spacer(flex: 1),
-              TextButton(
-                onPressed: () => Navigator.of(context).push<void>(
-                  MaterialPageRoute(
-                    builder: (_) => const ForgotPinScreen(),
-                  ),
-                ),
-                child: const Text(
-                  'Forgot PIN?',
-                  style: TextStyle(
-                    color: AppColors.primary,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
               const SizedBox(height: 16),
             ],
           ),
