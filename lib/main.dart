@@ -7,6 +7,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart' as pkg_provider;
 
 import 'constants/constants.dart';
+import 'features/app_lock/app_lock_gate.dart';
+import 'features/app_lock/app_lock_provider.dart';
+import 'features/app_lock/app_lock_service.dart';
 import 'features/notification/datasources/firestore_notification_data_source.dart';
 import 'features/notification/datasources/mock_notification_data_source.dart';
 import 'features/notification/datasources/notification_data_source.dart';
@@ -42,6 +45,7 @@ class _WeAreReadyAppState extends State<WeAreReadyApp> {
       : FirestoreNotificationDataSource(NotificationService());
 
   late final AuthProvider _auth;
+  late final AppLockProvider _appLock;
   late final GoRouter _router;
   late final NotificationProvider _notifications;
 
@@ -49,6 +53,7 @@ class _WeAreReadyAppState extends State<WeAreReadyApp> {
   void initState() {
     super.initState();
     _auth = AuthProvider();
+    _appLock = AppLockProvider(AppLockService());
     _router = createRouter(_auth);
     _notifications = NotificationProvider(_notificationSource);
   }
@@ -56,6 +61,7 @@ class _WeAreReadyAppState extends State<WeAreReadyApp> {
   @override
   void dispose() {
     _auth.dispose();
+    _appLock.dispose();
     _notifications.dispose();
     super.dispose();
   }
@@ -74,6 +80,9 @@ class _WeAreReadyAppState extends State<WeAreReadyApp> {
         pkg_provider.ChangeNotifierProvider<MapProvider>(
           create: (_) => MapProvider(),
         ),
+        pkg_provider.ChangeNotifierProvider<AppLockProvider>.value(
+          value: _appLock,
+        ),
       ],
       child: pkg_provider.Consumer<AuthProvider>(
         builder: (context, auth, _) {
@@ -84,11 +93,13 @@ class _WeAreReadyAppState extends State<WeAreReadyApp> {
               home: const _SplashScreen(),
             );
           }
-          return MaterialApp.router(
-            debugShowCheckedModeBanner: false,
-            title: AppInfo.appName,
-            theme: _theme,
-            routerConfig: _router,
+          return AppLockGate(
+            child: MaterialApp.router(
+              debugShowCheckedModeBanner: false,
+              title: AppInfo.appName,
+              theme: _theme,
+              routerConfig: _router,
+            ),
           );
         },
       ),

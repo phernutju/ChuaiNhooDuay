@@ -2,6 +2,8 @@
     <!-- geolocator: fine location for GPS fix; coarse as fallback -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <!-- local_auth: biometric unlock -->
+    <uses-permission android:name="android.permission.USE_BIOMETRIC" />
 
     <application
         android:label="ChuayNooDuay"
@@ -35,7 +37,7 @@
              NOTE: android:minSdkVersion must be >= 21 in app/build.gradle. -->
         <meta-data
             android:name="com.google.android.geo.API_KEY"
-            android:value="YOUR_API_KEY" />
+            android:value="${MAPS_API_KEY}" />
 
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->

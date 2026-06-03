@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 import 'package:provider/provider.dart';
 import '../../constants/constants.dart';
 import '../../models/request_model.dart';
 import '../../providers/map_provider.dart';
+import '../../utils/geo_utils.dart';
+import '../request_detail/mock/request_mock_data.dart';
 import 'nearby_requests_map.dart';
 
 // ---------------------------------------------------------------------------
@@ -44,6 +47,33 @@ class _MapPlaceholderScreenState extends State<MapPlaceholderScreen> {
       orElse: () => mapProvider.openRequests.first,
     );
 
+    final lat = request.location.coordinates.latitude;
+    final lng = request.location.coordinates.longitude;
+    final userLoc = mapProvider.userLocation;
+    final dist = userLoc != null
+        ? double.parse(
+            distanceKm(userLoc, LatLng(lat, lng)).toStringAsFixed(1))
+        : 0.0;
+
+    final detailData = RequestDetailData(
+      id: request.id,
+      category: request.requestType.name,
+      urgencyLevel: request.urgencyLevel,
+      title: request.title,
+      minutesAgo: DateTime.now().difference(request.createdAt).inMinutes,
+      requesterName: request.isAnonymous ? 'Anonymous' : 'Requester',
+      requesterLocation: request.location.address,
+      isAnonymous: request.isAnonymous,
+      isVerified: false,
+      description: request.description,
+      skillsNeeded: const [],
+      lat: lat,
+      lng: lng,
+      distanceKm: dist,
+    );
+
+    final screenContext = context;
+
     showModalBottomSheet<void>(
       context: context,
       backgroundColor: AppColors.surface,
@@ -78,8 +108,13 @@ class _MapPlaceholderScreenState extends State<MapPlaceholderScreen> {
                         BorderRadius.circular(AppSpacing.radiusMd),
                   ),
                 ),
-                // TODO(real-data): navigate to request detail route.
-                onPressed: () => Navigator.of(ctx).pop(),
+                onPressed: () {
+                  Navigator.of(ctx).pop();
+                  screenContext.push(
+                    '${AppRoutes.requestDetail}/${request.id}',
+                    extra: detailData,
+                  );
+                },
                 child: const Text('View details'),
               ),
             ),

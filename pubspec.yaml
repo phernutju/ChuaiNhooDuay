@@ -23,6 +23,9 @@ dependencies:
   google_fonts: ^6.3.3
   google_maps_flutter: ^2.17.1
   web: ^1.1.1
+  local_auth: ^2.3.0
+  flutter_secure_storage: ^9.2.4
+  crypto: ^3.0.3
 
 dev_dependencies:
   flutter_test:
