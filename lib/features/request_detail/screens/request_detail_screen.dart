@@ -10,8 +10,6 @@ import 'package:we_are_ready/features/request_detail/mock/request_mock_data.dart
 import 'package:provider/provider.dart';
 import 'package:we_are_ready/providers/providers.dart';
 import 'package:we_are_ready/services/request_service.dart';
-import 'package:we_are_ready/widgets/role_pill.dart';
-import 'package:we_are_ready/widgets/role_switch_sheet.dart';
 import 'package:we_are_ready/models/request_model.dart';
 
 RequestModel _toRequestModel(RequestDetailData data) {
@@ -48,9 +46,14 @@ Color _avatarColorFromName(String name) {
 }
 
 class RequestDetailScreen extends StatefulWidget {
-  const RequestDetailScreen({super.key, required this.request});
+  const RequestDetailScreen({
+    super.key,
+    required this.request,
+    this.showActions = true,
+  });
 
   final RequestDetailData request;
+  final bool showActions;
 
   @override
   State<RequestDetailScreen> createState() => _RequestDetailScreenState();
@@ -58,7 +61,6 @@ class RequestDetailScreen extends StatefulWidget {
 
 class _RequestDetailScreenState extends State<RequestDetailScreen> {
   bool _checkedIn = false;
-  RoleType _currentRole = RoleType.volunteer;
 
   static const _appBarTitle = 'Request';
   static const _snackBarMsg = "You're helping!";
@@ -109,18 +111,6 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
     );
   }
 
-  void _showRoleSheet() {
-    showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (_) => RoleSwitchSheet(
-        currentRole: _currentRole,
-        onRoleSelected: (role) => setState(() => _currentRole = role),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final request = widget.request;
@@ -143,24 +133,6 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
             Text(request.category, style: AppTextStyles.appBarSubtitle),
           ],
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(
-              Icons.share_outlined,
-              color: AppColors.textPrimary,
-            ),
-            onPressed: () {},
-          ),
-          Padding(
-            padding: const EdgeInsets.only(right: AppSpacing.md),
-            child: Center(
-              child: RolePill(
-                currentRole: _currentRole,
-                onTap: _showRoleSheet,
-              ),
-            ),
-          ),
-        ],
       ),
       body: Column(
         children: [
@@ -187,12 +159,13 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
               ),
             ),
           ),
-          _BottomBar(
-            accepted: joined,
-            checkedIn: _checkedIn,
-            onHelp: _onHelp,
-            onCheckIn: _confirmCheckIn,
-          ),
+          if (widget.showActions)
+            _BottomBar(
+              accepted: joined,
+              checkedIn: _checkedIn,
+              onHelp: _onHelp,
+              onCheckIn: _confirmCheckIn,
+            ),
         ],
       ),
     );
@@ -548,23 +521,6 @@ class _BottomBar extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Container(
-            width: 48,
-            height: 48,
-            decoration: const BoxDecoration(
-              color: AppColors.surface,
-              shape: BoxShape.circle,
-            ),
-            child: IconButton(
-              icon: const Icon(
-                Icons.chat_bubble_outline,
-                color: AppColors.textPrimary,
-                size: 20,
-              ),
-              onPressed: () {},
-            ),
-          ),
-          const SizedBox(width: AppSpacing.sm),
           Expanded(
             child: GestureDetector(
               onTap: tapAction,

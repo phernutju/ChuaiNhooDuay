@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/request_model.dart';
+import 'user_service.dart';
 
 class RequestService {
   final _db = FirebaseFirestore.instance;
@@ -38,8 +39,11 @@ class RequestService {
   }
 
   Future<void> joinRequest(String requestId, String volunteerId) async {
+    final user = await UserService().getUser(volunteerId);
+    final name = user?.name?.isNotEmpty == true ? user!.name! : 'Volunteer';
     await _db.collection('requests').doc(requestId).update({
       'assignedVolunteerIds': FieldValue.arrayUnion([volunteerId]),
+      'assignedVolunteerNames': FieldValue.arrayUnion([name]),
       'status': 'matched',
       'updatedAt': Timestamp.now(),
     });

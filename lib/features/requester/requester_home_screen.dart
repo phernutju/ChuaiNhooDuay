@@ -32,8 +32,10 @@ class RequesterHomeScreen extends ConsumerWidget {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(content: Text('Switch failed: $e')),
                 );
+                return;
               }
             }
+            if (context.mounted) context.go(AppRoutes.home);
           }
         },
       ),
@@ -416,7 +418,8 @@ class _RequestCard extends StatelessWidget {
         title: request.title,
         distanceKm: 0,
         minutesAgo: DateTime.now().difference(request.createdAt).inMinutes,
-        requesterName: request.isAnonymous ? 'Anonymous' : 'You',
+        requesterName: request.isAnonymous ? 'Anonymous'
+            : (request.requesterName.isNotEmpty ? request.requesterName : 'You'),
         requesterLocation: request.location.address,
         isAnonymous: request.isAnonymous,
         isVerified: false,
@@ -450,7 +453,7 @@ class _RequestCard extends StatelessWidget {
     return GestureDetector(
       onTap: () => context.push(
         '${AppRoutes.requestDetail}/${request.id}',
-        extra: _toDetailData(),
+        extra: {'request': _toDetailData(), 'showActions': false},
       ),
       child: Container(
       margin: const EdgeInsets.only(bottom: 8),
@@ -499,7 +502,10 @@ class _RequestCard extends StatelessWidget {
           const SizedBox(height: 8),
           // Row 3 — status-dependent
           if (request.status == RequestStatus.matched)
-            _MatchedRow(assignedCount: request.assignedVolunteerIds.length)
+            _MatchedRow(
+              assignedCount: request.assignedVolunteerIds.length,
+              volunteerNames: request.assignedVolunteerNames,
+            )
           else if (request.status == RequestStatus.waiting)
             _WaitingRow(),
         ],
@@ -519,7 +525,8 @@ class _RequestCard extends StatelessWidget {
 
 class _MatchedRow extends StatelessWidget {
   final int assignedCount;
-  const _MatchedRow({required this.assignedCount});
+  final List<String> volunteerNames;
+  const _MatchedRow({required this.assignedCount, this.volunteerNames = const []});
 
   @override
   Widget build(BuildContext context) {
@@ -554,14 +561,16 @@ class _MatchedRow extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'Volunteer responding',
-                style: TextStyle(color: Colors.white, fontSize: 12),
+              Text(
+                volunteerNames.isNotEmpty
+                    ? volunteerNames.first
+                    : 'Volunteer responding',
+                style: const TextStyle(color: Colors.white, fontSize: 12),
               ),
               Text(
                 assignedCount > 1
-                    ? 'ETA soon · +${assignedCount - 1} more responding'
-                    : 'ETA soon',
+                    ? '+${assignedCount - 1} more responding'
+                    : 'On the way',
                 style: const TextStyle(color: kTextSecondary, fontSize: 11),
               ),
             ],

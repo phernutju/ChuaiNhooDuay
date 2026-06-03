@@ -33,6 +33,8 @@ class RequestModel {
   final int urgencyScore;
   final int maxVolunteer;
   final List<String> assignedVolunteerIds;
+  final List<String> assignedVolunteerNames;
+  final String requesterName;
   final RequestStatus status;
   final bool isAnonymous;
   final DateTime createdAt;
@@ -49,6 +51,8 @@ class RequestModel {
     required this.urgencyScore,
     required this.maxVolunteer,
     this.assignedVolunteerIds = const [],
+    this.assignedVolunteerNames = const [],
+    this.requesterName = '',
     required this.status,
     this.isAnonymous = false,
     required this.createdAt,
@@ -78,8 +82,12 @@ class RequestModel {
         orElse: () => RequestStatus.waiting,
       ),
       isAnonymous: data['is_anonymous'] as bool? ?? false,
+      requesterName: data['requester_name'] as String? ?? '',
       assignedVolunteerIds: data['assignedVolunteerIds'] != null
           ? List<String>.from(data['assignedVolunteerIds'] as List)
+          : [],
+      assignedVolunteerNames: data['assignedVolunteerNames'] != null
+          ? List<String>.from(data['assignedVolunteerNames'] as List)
           : [],
       createdAt: (data['createdAt'] as Timestamp).toDate(),
       updatedAt: (data['updatedAt'] as Timestamp).toDate(),
@@ -97,7 +105,9 @@ class RequestModel {
         'max_volunteer': maxVolunteer,
         'status': status.name,
         'is_anonymous': isAnonymous,
+        'requester_name': requesterName,
         'assignedVolunteerIds': assignedVolunteerIds,
+        'assignedVolunteerNames': assignedVolunteerNames,
         'createdAt': Timestamp.fromDate(createdAt),
         'updatedAt': Timestamp.fromDate(updatedAt),
       };
@@ -115,6 +125,8 @@ class RequestModel {
     int? urgencyScore,
     int? maxVolunteer,
     List<String>? assignedVolunteerIds,
+    List<String>? assignedVolunteerNames,
+    String? requesterName,
     RequestStatus? status,
     bool? isAnonymous,
     DateTime? createdAt,
@@ -131,6 +143,8 @@ class RequestModel {
       urgencyScore: urgencyScore ?? this.urgencyScore,
       maxVolunteer: maxVolunteer ?? this.maxVolunteer,
       assignedVolunteerIds: assignedVolunteerIds ?? this.assignedVolunteerIds,
+      assignedVolunteerNames: assignedVolunteerNames ?? this.assignedVolunteerNames,
+      requesterName: requesterName ?? this.requesterName,
       status: status ?? this.status,
       isAnonymous: isAnonymous ?? this.isAnonymous,
       createdAt: createdAt ?? this.createdAt,

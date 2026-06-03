@@ -102,8 +102,6 @@ class _NewRequestScreenState extends ConsumerState<NewRequestScreen> {
             _SectionHeader(number: '4', title: 'Location'),
             const SizedBox(height: 12),
             _LocationCard(state: state),
-            const SizedBox(height: 16),
-            _AnonymousToggle(isAnonymous: state.isAnonymous),
             const SizedBox(height: 32),
           ],
         ),
@@ -404,34 +402,6 @@ class _LocationCard extends ConsumerWidget {
   }
 }
 
-class _AnonymousToggle extends ConsumerWidget {
-  final bool isAnonymous;
-  const _AnonymousToggle({required this.isAnonymous});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return Row(
-      children: [
-        const Icon(Icons.visibility_off_outlined,
-            color: Colors.white54, size: 18),
-        const SizedBox(width: 8),
-        const Expanded(
-          child: Text(
-            'Post anonymously',
-            style: TextStyle(color: Colors.white, fontSize: 14),
-          ),
-        ),
-        Switch(
-          value: isAnonymous,
-          onChanged: (_) => ref
-              .read(requesterControllerProvider.notifier)
-              .toggleAnonymous(),
-          activeThumbColor: kPrimaryBlue,
-        ),
-      ],
-    );
-  }
-}
 
 class _SubmitBar extends StatelessWidget {
   final RequesterState state;

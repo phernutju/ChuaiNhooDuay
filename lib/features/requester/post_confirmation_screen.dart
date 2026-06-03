@@ -94,7 +94,7 @@ class PostConfirmationScreen extends ConsumerWidget {
                   child: ElevatedButton.icon(
                     onPressed: () {
                       ref.read(requesterControllerProvider.notifier).reset();
-                      context.goNamed('requester-home');
+                      context.go(AppRoutes.home);
                     },
                     icon: const Icon(Icons.arrow_forward, size: 18),
                     label: const Text(

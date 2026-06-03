@@ -78,7 +78,9 @@ class _VolunteerFeedScreenState extends ConsumerState<VolunteerFeedScreen> {
         title: r.title,
         distanceKm: 0,
         minutesAgo: DateTime.now().difference(r.createdAt).inMinutes,
-        requesterName: r.isAnonymous ? 'Anonymous' : 'Requester',
+        requesterName: r.isAnonymous
+            ? 'Anonymous'
+            : (r.requesterName.isNotEmpty ? r.requesterName : 'Requester'),
         requesterLocation: r.location.address,
         isAnonymous: r.isAnonymous,
         isVerified: false,
