@@ -87,11 +87,12 @@ class _WeAreReadyAppState extends State<WeAreReadyApp> {
           create: (_) => AppLockProvider(AppLockService()),
           update: (_, auth, appLock) {
             final uid = auth.userModel?.id;
-            print('AppLockProxy update - uid: $uid');
-            if (uid != null) {
+            if (uid == null) {
+              appLock!.reset();
+            } else {
               appLock!.initForUser(uid);
             }
-            return appLock!;
+            return appLock;
           },
         ),
       ],

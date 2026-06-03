@@ -193,6 +193,14 @@ final myRequestsProvider =
   return RequestService().getMyRequests(requesterId);
 });
 
-final openRequestsProvider = StreamProvider<List<RequestModel>>((ref) {
-  return RequestService().getOpenRequests();
+final openRequestsProvider = StreamProvider<List<RequestModel>>((ref) async* {
+  final user = ref.watch(authStateProvider).value;
+  if (user == null) {
+    yield <RequestModel>[];
+    return;
+  }
+  try {
+    await user.getIdToken();
+  } catch (_) {}
+  yield* RequestService().getOpenRequests();
 });

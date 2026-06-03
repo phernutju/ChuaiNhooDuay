@@ -21,8 +21,7 @@ class AppLockProvider extends ChangeNotifier {
   bool get biometricAvailable => _biometricAvailable;
 
   Future<void> initForUser(String uid) async {
-    print('initForUser called with uid: $uid');
-    if (_uid == uid && _initialized) return;
+if (_uid == uid && _initialized) return;
     _uid = uid;
     _initialized = false;
     _locked = true;
@@ -30,6 +29,16 @@ class AppLockProvider extends ChangeNotifier {
     _biometricEnabled = await _service.getBiometricEnabled(uid);
     _biometricAvailable = await _service.isBiometricAvailable();
     _initialized = true;
+    notifyListeners();
+  }
+
+  void reset() {
+    _uid = null;
+    _initialized = false;
+    _locked = true;
+    _hasPin = false;
+    _biometricEnabled = false;
+    _biometricAvailable = false;
     notifyListeners();
   }
 
