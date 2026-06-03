@@ -184,8 +184,6 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
                   _MapPlaceholder(request: request),
                   const SizedBox(height: AppSpacing.md),
                   _RequesterCard(request: request),
-                  const SizedBox(height: AppSpacing.md),
-                  _SkillsSection(skills: request.skillsNeeded),
                   const SizedBox(height: AppSpacing.lg),
                 ],
               ),
@@ -438,71 +436,6 @@ class _VerifiedBadge extends StatelessWidget {
           fontWeight: FontWeight.w700,
           letterSpacing: 0.5,
         ),
-      ),
-    );
-  }
-}
-
-class _SkillsSection extends StatelessWidget {
-  const _SkillsSection({required this.skills});
-
-  final List<String> skills;
-
-  static const _sectionLabel = 'SKILLS NEEDED';
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(_sectionLabel, style: AppTextStyles.labelSmall),
-        const SizedBox(height: AppSpacing.sm),
-        Wrap(
-          spacing: AppSpacing.sm,
-          runSpacing: AppSpacing.sm,
-          children: skills.map((s) => _SkillChip(skill: s)).toList(),
-        ),
-      ],
-    );
-  }
-}
-
-class _SkillChip extends StatelessWidget {
-  const _SkillChip({required this.skill});
-
-  final String skill;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.md,
-        vertical: AppSpacing.sm - 2,
-      ),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(AppSpacing.radiusPill),
-        border: Border.all(color: AppColors.border, width: 1),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 6,
-            height: 6,
-            decoration: const BoxDecoration(
-              color: AppColors.success,
-              shape: BoxShape.circle,
-            ),
-          ),
-          const SizedBox(width: 6),
-          Text(
-            skill,
-            style: const TextStyle(
-              color: AppColors.textPrimary,
-              fontSize: 13,
-            ),
-          ),
-        ],
       ),
     );
   }

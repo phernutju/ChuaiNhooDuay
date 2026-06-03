@@ -109,7 +109,7 @@ class _PhoneScreenState extends State<PhoneScreen> {
               const _FeatureRow(
                 icon: Icons.people_outline,
                 bold: 'Switch roles anytime',
-                rest: ' — volunteer or civilian',
+                rest: ' — volunteer or requester',
               ),
               const SizedBox(height: 18),
               const _FeatureRow(
