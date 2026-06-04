@@ -239,14 +239,6 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                 ],
               ),
             ),
-            IconButton(
-              icon: const Icon(
-                Icons.ios_share,
-                size: 18,
-                color: _C.textPrimary,
-              ),
-              onPressed: null,
-            ),
           ],
         ),
       ),
