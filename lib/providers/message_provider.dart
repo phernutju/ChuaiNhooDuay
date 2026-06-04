@@ -123,6 +123,21 @@ class MessageProvider extends ChangeNotifier {
     }
   }
 
+  /// Permanently deletes [messageId] from [requestId].
+  ///
+  /// Only call this after verifying the current user owns the message.
+  Future<void> deleteMessage(String requestId, String messageId) async {
+    try {
+      await _messageService.deleteMessage(
+        requestId: requestId,
+        messageId: messageId,
+      );
+    } catch (e) {
+      error = e.toString();
+      notifyListeners();
+    }
+  }
+
   /// Marks all currently loaded unseen messages as seen by [userId].
   ///
   /// Errors are swallowed silently — seen tracking is best-effort.

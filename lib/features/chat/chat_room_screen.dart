@@ -15,6 +15,7 @@ abstract class _C {
   static const background    = Color(0xFF0F0F0F);
   static const surface       = Color(0xFF1A1A1A);
   static const surfaceRaise  = Color(0xFF242424);
+  static const border        = Color(0xFF2C3340);
   static const accent        = Color(0xFFE8442A);
   static const textPrimary   = Color(0xFFEEEEEE);
   static const textSecondary = Color(0xFF888888);
@@ -140,6 +141,103 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
 
   void _onSend(String text) {
     _provider.sendText(widget.requestId, widget.currentUserId, text);
+  }
+
+  void _showDeleteSheet(MessageModel msg) {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (_) => SafeArea(
+        child: Container(
+          decoration: const BoxDecoration(
+            color: _C.surface,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Drag handle
+              Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.symmetric(vertical: 12),
+                decoration: BoxDecoration(
+                  color: _C.border,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 4),
+              // Delete option card
+              GestureDetector(
+                onTap: () async {
+                  Navigator.pop(context);
+                  await _provider.deleteMessage(widget.requestId, msg.id);
+                },
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  decoration: BoxDecoration(
+                    color: _C.surfaceRaise,
+                    border: Border.all(color: _C.border, width: 0.5),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          color: _C.accent.withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(
+                          Icons.delete_outline_rounded,
+                          color: _C.accent,
+                          size: 22,
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      Text(
+                        'Delete message',
+                        style: GoogleFonts.ibmPlexSansThai(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: _C.accent,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+              // Cancel button
+              SizedBox(
+                width: double.infinity,
+                child: TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: Text(
+                    'Cancel',
+                    style: GoogleFonts.ibmPlexSansThai(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: _C.textSecondary,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   @override
@@ -291,12 +389,14 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
 
   Widget _buildItem(MessageModel msg, MessageProvider provider) {
     final senderName = provider.senderNames[msg.senderId];
+    final isOwn = msg.senderId == widget.currentUserId;
     return Padding(
       padding: const EdgeInsets.only(bottom: 4),
       child: MessageBubble(
         message: msg,
         currentUserId: widget.currentUserId,
         senderName: senderName,
+        onLongPress: isOwn ? () => _showDeleteSheet(msg) : null,
       ),
     );
   }
