@@ -36,11 +36,16 @@ class MessageBubble extends StatelessWidget {
     required this.message,
     required this.currentUserId,
     this.senderName,
+    this.onLongPress,
   });
 
   final MessageModel message;
   final String currentUserId;
   final String? senderName;
+
+  /// Called when the user long-presses an own message. Only forwarded to own
+  /// bubbles — received and system messages do not trigger this.
+  final VoidCallback? onLongPress;
 
   @override
   Widget build(BuildContext context) {
@@ -53,6 +58,7 @@ class MessageBubble extends StatelessWidget {
         isOwn: isOwn,
         senderName: senderName,
         currentUserId: currentUserId,
+        onLongPress: isOwn ? onLongPress : null,
       );
     }
 
@@ -61,11 +67,17 @@ class MessageBubble extends StatelessWidget {
         return SystemMessagePill(text: message.text ?? '');
 
       case MessageType.location:
-        return _LocationRow(message: message, isOwn: isOwn, maxW: maxW, senderName: senderName);
+        return _LocationRow(
+          message: message,
+          isOwn: isOwn,
+          maxW: maxW,
+          senderName: senderName,
+          onLongPress: isOwn ? onLongPress : null,
+        );
 
       case MessageType.message:
         return isOwn
-            ? _OwnBubble(message: message, maxW: maxW, currentUserId: currentUserId)
+            ? _OwnBubble(message: message, maxW: maxW, currentUserId: currentUserId, onLongPress: onLongPress)
             : _TheirBubble(message: message, maxW: maxW, senderName: senderName);
     }
   }
@@ -147,11 +159,13 @@ class _OwnBubble extends StatelessWidget {
     required this.message,
     required this.maxW,
     required this.currentUserId,
+    this.onLongPress,
   });
 
   final MessageModel message;
   final double maxW;
   final String currentUserId;
+  final VoidCallback? onLongPress;
 
   @override
   Widget build(BuildContext context) {
@@ -171,19 +185,22 @@ class _OwnBubble extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  decoration: const BoxDecoration(
-                    color: _C.accent,
-                    borderRadius: _ownRadius,
-                  ),
-                  child: Text(
-                    message.text ?? '',
-                    style: GoogleFonts.ibmPlexSansThai(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w400,
-                      color: Colors.white,
-                      height: 1.45,
+                GestureDetector(
+                  onLongPress: onLongPress,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: const BoxDecoration(
+                      color: _C.accent,
+                      borderRadius: _ownRadius,
+                    ),
+                    child: Text(
+                      message.text ?? '',
+                      style: GoogleFonts.ibmPlexSansThai(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w400,
+                        color: Colors.white,
+                        height: 1.45,
+                      ),
                     ),
                   ),
                 ),
@@ -213,12 +230,14 @@ class _LocationRow extends StatelessWidget {
     required this.isOwn,
     required this.maxW,
     this.senderName,
+    this.onLongPress,
   });
 
   final MessageModel message;
   final bool isOwn;
   final double maxW;
   final String? senderName;
+  final VoidCallback? onLongPress;
 
   @override
   Widget build(BuildContext context) {
@@ -228,11 +247,14 @@ class _LocationRow extends StatelessWidget {
     // Incoming location cards sit beside a 28px avatar + 6px gap;
     // subtract that to prevent the card overflowing the row.
     final cardMaxW = isOwn ? maxW : maxW - 34;
-    final card = ConstrainedBox(
-      constraints: BoxConstraints(maxWidth: cardMaxW),
-      child: LocationBubble(
-        coords: message.text ?? '',
-        address: message.locationAddress,
+    final card = GestureDetector(
+      onLongPress: onLongPress,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: cardMaxW),
+        child: LocationBubble(
+          coords: message.text ?? '',
+          address: message.locationAddress,
+        ),
       ),
     );
 
@@ -271,12 +293,14 @@ class _ImageRow extends StatelessWidget {
     required this.isOwn,
     this.senderName,
     required this.currentUserId,
+    this.onLongPress,
   });
 
   final MessageModel message;
   final bool isOwn;
   final String? senderName;
   final String currentUserId;
+  final VoidCallback? onLongPress;
 
   @override
   Widget build(BuildContext context) {
@@ -298,7 +322,7 @@ class _ImageRow extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.end,
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            bubble,
+            GestureDetector(onLongPress: onLongPress, child: bubble),
           ],
         ),
       );

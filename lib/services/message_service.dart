@@ -218,6 +218,23 @@ class MessageService {
     }
   }
 
+  /// Permanently deletes a message document from Firestore.
+  ///
+  /// Callers are responsible for verifying ownership before calling this.
+  Future<void> deleteMessage({
+    required String requestId,
+    required String messageId,
+  }) async {
+    try {
+      await MessageModel.subcollection(_db, requestId).doc(messageId).delete();
+    } on FirebaseException catch (e) {
+      throw MessageException(
+        'Failed to delete message $messageId',
+        cause: e,
+      );
+    }
+  }
+
   /// Marks all unseen messages in [messages] as seen by [userId] in a single batch.
   Future<void> markAllSeen({
     required String requestId,
