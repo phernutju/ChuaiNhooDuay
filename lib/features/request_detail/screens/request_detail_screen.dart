@@ -99,7 +99,6 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
 
   bool get _isCreator {
     final uid = FirebaseAuth.instance.currentUser?.uid;
-    print('_isCreator check - uid: $uid, createdBy: ${widget.request.createdBy}');
     return uid != null &&
         uid.isNotEmpty &&
         uid == widget.request.createdBy;
