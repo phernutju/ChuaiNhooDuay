@@ -10,6 +10,7 @@ class MapProvider extends ChangeNotifier {
   MapProvider({MapService? service}) : _service = service ?? MapService();
 
   void startListening() {
+    print('startListening called, _sub: $_sub');
     _sub ??= _service.getOpenRequests().listen(_onRequestsUpdated);
   }
 
@@ -45,22 +46,23 @@ class MapProvider extends ChangeNotifier {
   }
 
   void _onRequestsUpdated(List<RequestModel> requests) {
+    print('_onRequestsUpdated: ${requests.length} requests');
     openRequests = requests;
     _recompute();
+    print('requestsInRadius: ${requestsInRadius.length}');
     notifyListeners();
   }
 
+  static const _fallbackCenter = LatLng(13.68, 100.55);
+
   void _recompute() {
-    if (userLocation == null) {
-      requestsInRadius = [];
-      return;
-    }
+    final loc = userLocation ?? _fallbackCenter;
     requestsInRadius = openRequests.where((r) {
       final point = LatLng(
         r.location.coordinates.latitude,
         r.location.coordinates.longitude,
       );
-      return isWithinRadius(userLocation!, point, radiusKm);
+      return isWithinRadius(loc, point, radiusKm);
     }).toList();
   }
 
