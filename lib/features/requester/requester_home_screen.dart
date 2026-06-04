@@ -619,33 +619,14 @@ class _WaitingRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
+    return const Row(
       children: [
-        const Icon(Icons.circle, color: Color(0xFF888888), size: 8),
-        const SizedBox(width: 6),
-        const Expanded(
+        Icon(Icons.circle, color: Color(0xFF888888), size: 8),
+        SizedBox(width: 6),
+        Expanded(
           child: Text(
             'Reaching nearby volunteers...',
             style: TextStyle(color: kTextSecondary, fontSize: 12),
-          ),
-        ),
-        GestureDetector(
-          onTap: () {},
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              color: const Color(0xFF2A2A2A),
-              borderRadius: BorderRadius.circular(6),
-              border: Border.all(color: const Color(0xFF444444)),
-            ),
-            child: const Text(
-              'Boost',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 11,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
           ),
         ),
       ],

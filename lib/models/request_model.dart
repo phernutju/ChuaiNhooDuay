@@ -41,6 +41,8 @@ class RequestModel {
   final DateTime updatedAt;
   /// Per-volunteer join timestamps: { volunteerId → joinedAt }
   final Map<String, DateTime> volunteerJoinedAt;
+  /// Set when any volunteer checks in; null means no one has checked in yet.
+  final DateTime? checkedInAt;
 
   RequestModel({
     required this.id,
@@ -60,6 +62,7 @@ class RequestModel {
     required this.createdAt,
     required this.updatedAt,
     this.volunteerJoinedAt = const {},
+    this.checkedInAt,
   });
 
   factory RequestModel.fromFirestore(DocumentSnapshot doc) {
@@ -96,6 +99,7 @@ class RequestModel {
       updatedAt: (data['updatedAt'] as Timestamp).toDate(),
       volunteerJoinedAt: (data['volunteerJoinedAt'] as Map<String, dynamic>? ?? {})
           .map((k, v) => MapEntry(k, (v as Timestamp).toDate())),
+      checkedInAt: (data['checkedInAt'] as Timestamp?)?.toDate(),
     );
   }
 
@@ -117,6 +121,8 @@ class RequestModel {
         'updatedAt': Timestamp.fromDate(updatedAt),
         'volunteerJoinedAt': volunteerJoinedAt
             .map((k, v) => MapEntry(k, Timestamp.fromDate(v))),
+        if (checkedInAt != null)
+          'checkedInAt': Timestamp.fromDate(checkedInAt!),
       };
 
   bool get isFull => assignedVolunteerIds.length >= maxVolunteer;
@@ -139,6 +145,7 @@ class RequestModel {
     DateTime? createdAt,
     DateTime? updatedAt,
     Map<String, DateTime>? volunteerJoinedAt,
+    DateTime? checkedInAt,
   }) {
     return RequestModel(
       id: id ?? this.id,
@@ -158,6 +165,7 @@ class RequestModel {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       volunteerJoinedAt: volunteerJoinedAt ?? this.volunteerJoinedAt,
+      checkedInAt: checkedInAt ?? this.checkedInAt,
     );
   }
 }
