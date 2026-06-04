@@ -48,7 +48,12 @@ class MessageBubble extends StatelessWidget {
     final maxW = MediaQuery.of(context).size.width * 0.72;
 
     if (message.imageUrl != null) {
-      return _ImageRow(message: message, isOwn: isOwn, senderName: senderName);
+      return _ImageRow(
+        message: message,
+        isOwn: isOwn,
+        senderName: senderName,
+        currentUserId: currentUserId,
+      );
     }
 
     switch (message.type) {
@@ -220,8 +225,11 @@ class _LocationRow extends StatelessWidget {
     final fallback = message.senderId.isNotEmpty ? message.senderId[0].toUpperCase() : '?';
     final initial = senderName?.isNotEmpty == true ? senderName![0].toUpperCase() : fallback;
 
+    // Incoming location cards sit beside a 28px avatar + 6px gap;
+    // subtract that to prevent the card overflowing the row.
+    final cardMaxW = isOwn ? maxW : maxW - 34;
     final card = ConstrainedBox(
-      constraints: BoxConstraints(maxWidth: maxW),
+      constraints: BoxConstraints(maxWidth: cardMaxW),
       child: LocationBubble(
         coords: message.text ?? '',
         address: message.locationAddress,
@@ -262,11 +270,13 @@ class _ImageRow extends StatelessWidget {
     required this.message,
     required this.isOwn,
     this.senderName,
+    required this.currentUserId,
   });
 
   final MessageModel message;
   final bool isOwn;
   final String? senderName;
+  final String currentUserId;
 
   @override
   Widget build(BuildContext context) {
@@ -277,7 +287,8 @@ class _ImageRow extends StatelessWidget {
       caption: message.text,
       isOwn: isOwn,
       createdAt: message.createdAt,
-      seenCount: message.seenCount,
+      seenBy: message.seenBy,
+      currentUserId: currentUserId,
     );
 
     if (isOwn) {

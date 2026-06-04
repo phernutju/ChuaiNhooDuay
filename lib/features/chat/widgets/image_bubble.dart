@@ -5,12 +5,10 @@ import '_net_image_stub.dart'
     if (dart.library.html) '_net_image_web.dart';
 
 abstract class _C {
-  static const surfaceRaise  = Color(0xFF242424);
-  static const accent        = Color(0xFFE8442A);
-  static const textPrimary   = Color(0xFFEEEEEE);
-  static const textMuted     = Color(0xFF555555);
-  static const seenGray      = Color(0xFF555555);
-  static const seenGreen     = Color(0xFF5FA85F);
+  static const surfaceRaise = Color(0xFF242424);
+  static const accent       = Color(0xFFE8442A);
+  static const textPrimary  = Color(0xFFEEEEEE);
+  static const textMuted    = Color(0xFF555555);
 }
 
 const _ownRadius = BorderRadius.only(
@@ -34,19 +32,24 @@ class ImageBubble extends StatelessWidget {
     this.caption,
     required this.isOwn,
     required this.createdAt,
-    required this.seenCount,
+    required this.seenBy,
+    required this.currentUserId,
   });
 
   final String imageUrl;
   final String? caption;
   final bool isOwn;
   final DateTime createdAt;
-  final int seenCount;
+  final List<String> seenBy;
+  final String currentUserId;
 
   @override
   Widget build(BuildContext context) {
     final radius = isOwn ? _ownRadius : _theirRadius;
-    final seen = seenCount >= 2;
+    final readCount = seenBy.where((id) => id != currentUserId).length;
+    final statusLabel = readCount == 0
+        ? 'Sent · ${_fmt(createdAt)}'
+        : 'Read $readCount · ${_fmt(createdAt)}';
 
     return Column(
       crossAxisAlignment:
@@ -83,30 +86,24 @@ class ImageBubble extends StatelessWidget {
           ),
         ],
         const SizedBox(height: 2),
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (isOwn) ...[
-              Text(
-                '✓✓',
-                style: GoogleFonts.ibmPlexSansThai(
-                  fontSize: 11,
-                  color: seen ? _C.seenGreen : _C.seenGray,
-                  height: 1,
-                ),
-              ),
-              const SizedBox(width: 3),
-            ],
-            Text(
-              _fmt(createdAt),
-              style: GoogleFonts.ibmPlexSansThai(
-                fontSize: 10,
-                fontWeight: FontWeight.w400,
-                color: _C.textMuted,
-              ),
+        if (isOwn)
+          Text(
+            statusLabel,
+            style: GoogleFonts.ibmPlexSansThai(
+              fontSize: 10,
+              fontWeight: FontWeight.w400,
+              color: _C.textMuted,
             ),
-          ],
-        ),
+          )
+        else
+          Text(
+            _fmt(createdAt),
+            style: GoogleFonts.ibmPlexSansThai(
+              fontSize: 10,
+              fontWeight: FontWeight.w400,
+              color: _C.textMuted,
+            ),
+          ),
       ],
     );
   }
