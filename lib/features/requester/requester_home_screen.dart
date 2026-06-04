@@ -9,6 +9,8 @@ import '../../models/user_model.dart';
 import '../../providers/auth_provider.dart' as app_auth;
 import '../../widgets/role_pill.dart';
 import '../../widgets/role_switch_sheet.dart';
+import '../../services/request_service.dart';
+import '../profile/profile_screen.dart';
 import 'requester_controller.dart';
 
 Color _avatarColorFromName(String name) {
@@ -75,7 +77,14 @@ class RequesterHomeScreen extends ConsumerWidget {
             titleSpacing: AppSpacing.md,
             title: Row(
               children: [
-                _ProfileAvatar(name: userName),
+                GestureDetector(
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => const ProfileScreen(),
+                    ),
+                  ),
+                  child: _ProfileAvatar(name: userName),
+                ),
                 const SizedBox(width: AppSpacing.sm + 2),
                 Expanded(
                   child: Column(
@@ -426,8 +435,9 @@ class _RequestCard extends StatelessWidget {
 
   // Status: color + bg
   static const _statusColors = {
-    RequestStatus.matched:   (Color(0xFF4CAF70), Color(0xFF1A2D1A)),
     RequestStatus.waiting:   (Color(0xFF888888), Color(0xFF2A2A2A)),
+    RequestStatus.assigned:  (Color(0xFFEF9F27), Color(0xFF2D1F08)),
+    RequestStatus.matched:   (Color(0xFF4CAF70), Color(0xFF1A2D1A)),
     RequestStatus.completed: (Color(0xFF888888), Color(0xFF2A2A2A)),
   };
 
@@ -489,10 +499,13 @@ class _RequestCard extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           // Row 3 — status-dependent
-          if (request.status == RequestStatus.matched)
+          if (request.status == RequestStatus.assigned ||
+              request.status == RequestStatus.matched)
             _MatchedRow(
+              requestId: request.id,
               assignedCount: request.assignedVolunteerIds.length,
               volunteerNames: request.assignedVolunteerNames,
+              isMatched: request.status == RequestStatus.matched,
             )
           else if (request.status == RequestStatus.waiting)
             _WaitingRow(),
@@ -512,15 +525,27 @@ class _RequestCard extends StatelessWidget {
 }
 
 class _MatchedRow extends StatelessWidget {
+  final String requestId;
   final int assignedCount;
   final List<String> volunteerNames;
-  const _MatchedRow({required this.assignedCount, this.volunteerNames = const []});
+  final bool isMatched;
+  const _MatchedRow({
+    required this.requestId,
+    required this.assignedCount,
+    this.volunteerNames = const [],
+    this.isMatched = false,
+  });
+
+  Future<void> _complete(BuildContext context) async {
+    try {
+      await RequestService().completeRequest(requestId);
+    } catch (_) {}
+  }
 
   @override
   Widget build(BuildContext context) {
     return Row(
       children: [
-        // Avatar stack
         SizedBox(
           width: assignedCount > 1 ? 44.0 : 24.0,
           height: 24,
@@ -556,15 +581,34 @@ class _MatchedRow extends StatelessWidget {
                 style: const TextStyle(color: Colors.white, fontSize: 12),
               ),
               Text(
-                assignedCount > 1
-                    ? '+${assignedCount - 1} more responding'
-                    : 'On the way',
+                isMatched
+                    ? 'Arrived ✓'
+                    : assignedCount > 1
+                        ? '+${assignedCount - 1} more · On the way'
+                        : 'On the way',
                 style: const TextStyle(color: kTextSecondary, fontSize: 11),
               ),
             ],
           ),
         ),
-        const Icon(Icons.chevron_right, color: kTextSecondary, size: 18),
+        GestureDetector(
+          onTap: () => _complete(context),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            decoration: BoxDecoration(
+              border: Border.all(color: const Color(0xFF4CAF70)),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: const Text(
+              'Thank & close',
+              style: TextStyle(
+                color: Color(0xFF4CAF70),
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ),
       ],
     );
   }
