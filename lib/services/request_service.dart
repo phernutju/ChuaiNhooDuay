@@ -40,17 +40,39 @@ class RequestService {
   /// Adds [volunteerId] to the request's assigned volunteers and notifies the
   /// civilian owner.
   ///
-  /// Fetches the updated request document after the write so the notification
-  /// reflects the latest volunteer list.
+  /// Uses a transaction so concurrent joins are handled atomically:
+  /// - No-op if [volunteerId] is already assigned (idempotent).
+  /// - Status flips to [RequestStatus.matched] only when
+  ///   assignedVolunteerIds.length >= maxVolunteer; otherwise stays
+  ///   [RequestStatus.waiting] so other volunteers can still see the request.
   Future<void> joinRequest(String requestId, String volunteerId) async {
     final user = await UserService().getUser(volunteerId);
     final name = user?.name?.isNotEmpty == true ? user!.name! : 'Volunteer';
 
-    await _db.collection('requests').doc(requestId).update({
-      'assignedVolunteerIds': FieldValue.arrayUnion([volunteerId]),
-      'assignedVolunteerNames': FieldValue.arrayUnion([name]),
-      'status': 'matched',
-      'updatedAt': Timestamp.now(),
+    await _db.runTransaction((txn) async {
+      final ref = _db.collection('requests').doc(requestId);
+      final snap = await txn.get(ref);
+      if (!snap.exists) return;
+
+      final data = snap.data() as Map<String, dynamic>;
+      final ids = List<String>.from(data['assignedVolunteerIds'] as List? ?? []);
+      if (ids.contains(volunteerId)) return;
+
+      ids.add(volunteerId);
+      final names = List<String>.from(data['assignedVolunteerNames'] as List? ?? []);
+      names.add(name);
+
+      final maxVolunteer = data['max_volunteer'] as int? ?? 1;
+      final newStatus = ids.length >= maxVolunteer
+          ? RequestStatus.matched.name
+          : RequestStatus.waiting.name;
+
+      txn.update(ref, {
+        'assignedVolunteerIds': ids,
+        'assignedVolunteerNames': names,
+        'status': newStatus,
+        'updatedAt': Timestamp.now(),
+      });
     });
 
     final snap = await _db.collection('requests').doc(requestId).get();
@@ -106,6 +128,22 @@ class RequestService {
     return _db
         .collection('requests')
         .where('createdBy', isEqualTo: requesterId)
+        .snapshots()
+        .map((snap) {
+          final list = snap.docs
+              .map(RequestModel.fromFirestore)
+              .where((r) => r.status != RequestStatus.completed)
+              .toList();
+          list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+          return list;
+        });
+  }
+
+  Stream<List<RequestModel>> getJoinedRequests(String volunteerId) {
+    if (volunteerId.isEmpty) return Stream.value([]);
+    return _db
+        .collection('requests')
+        .where('assignedVolunteerIds', arrayContains: volunteerId)
         .snapshots()
         .map((snap) {
           final list = snap.docs

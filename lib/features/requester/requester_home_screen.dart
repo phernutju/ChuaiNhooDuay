@@ -11,6 +11,19 @@ import '../../widgets/role_pill.dart';
 import '../../widgets/role_switch_sheet.dart';
 import 'requester_controller.dart';
 
+Color _avatarColorFromName(String name) {
+  const colors = [
+    Color(0xFF4CAF50),
+    Color(0xFF2196F3),
+    Color(0xFF9C27B0),
+    Color(0xFFFF9800),
+    Color(0xFF00BCD4),
+    Color(0xFFE91E63),
+  ];
+  final hash = name.codeUnits.fold(0, (sum, e) => sum + e);
+  return colors[hash % colors.length];
+}
+
 class RequesterHomeScreen extends ConsumerWidget {
   const RequesterHomeScreen({super.key});
 
@@ -46,58 +59,58 @@ class RequesterHomeScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final uid = ref.watch(authStateProvider).value?.uid ?? '';
     final requestsAsync = ref.watch(myRequestsProvider(uid));
-    final userName = context.read<app_auth.AuthProvider>().userModel?.name ?? 'Requester';
+    final userName = context.read<app_auth.AuthProvider>().userModel?.name;
+    final parts = (userName ?? '').split(RegExp(r'\s+')).where((p) => p.isNotEmpty);
+    final firstName = parts.isNotEmpty ? parts.first : 'Requester';
+    final lastName = parts.length > 1 ? parts.skip(1).join(' ') : null;
 
     return Scaffold(
-      backgroundColor: kBgColor,
+      backgroundColor: AppColors.background,
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
-            backgroundColor: kBgColor,
+            backgroundColor: AppColors.background,
             floating: true,
             automaticallyImplyLeading: false,
+            titleSpacing: AppSpacing.md,
             title: Row(
               children: [
-                CircleAvatar(
-                  radius: 18,
-                  backgroundColor: kCardColor,
-                  child: const Icon(Icons.person, color: Colors.white70, size: 20),
-                ),
-                const SizedBox(width: 10),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      userName,
-                      style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 15,
-                          fontWeight: FontWeight.bold),
-                    ),
-                    Text(
-                      'REQUESTER MODE',
-                      style: TextStyle(
-                          color: kTextSecondary,
-                          fontSize: 10,
-                          letterSpacing: 1.0),
-                    ),
-                  ],
+                _ProfileAvatar(name: userName),
+                const SizedBox(width: AppSpacing.sm + 2),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        firstName,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTextStyles.appBarTitle,
+                      ),
+                      if (lastName != null)
+                        Text(
+                          lastName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppTextStyles.appBarTitle,
+                        ),
+                    ],
+                  ),
                 ),
               ],
             ),
             actions: [
               IconButton(
                 icon: const Icon(Icons.notifications_outlined,
-                    color: Colors.white70),
+                    color: AppColors.textSecondary),
                 onPressed: () => context.go(AppRoutes.notifications),
               ),
-              IconButton(
-                icon: const Icon(Icons.swap_horiz, color: Colors.white70),
-                tooltip: 'Switch role',
-                onPressed: () => _showRoleSheet(context),
+              RolePill(
+                currentRole: RoleType.requester,
+                onTap: () => _showRoleSheet(context),
               ),
-              _RequesterBadge(),
-              const SizedBox(width: 8),
+              const SizedBox(width: AppSpacing.sm),
             ],
           ),
           SliverPadding(
@@ -119,34 +132,6 @@ class RequesterHomeScreen extends ConsumerWidget {
   }
 }
 
-class _RequesterBadge extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: kCardColor,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: kBorderColor),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.shield_outlined, color: kUrgentColor, size: 13),
-          const SizedBox(width: 4),
-          Text(
-            'REQUESTER',
-            style: TextStyle(
-                color: kUrgentColor,
-                fontSize: 10,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 0.5),
-          ),
-        ],
-      ),
-    );
-  }
-}
 
 class _HeroCTACard extends StatelessWidget {
   final VoidCallback onTap;
@@ -645,6 +630,39 @@ class _Badge extends StatelessWidget {
           fontSize: 10,
           fontWeight: FontWeight.bold,
           letterSpacing: 0.4,
+        ),
+      ),
+    );
+  }
+}
+
+class _ProfileAvatar extends StatelessWidget {
+  const _ProfileAvatar({required this.name});
+
+  final String? name;
+
+  @override
+  Widget build(BuildContext context) {
+    final initial = (name != null && name!.isNotEmpty)
+        ? name![0].toUpperCase()
+        : '?';
+    final color =
+        name != null ? _avatarColorFromName(name!) : AppColors.textMuted;
+
+    return Container(
+      width: 44,
+      height: 44,
+      decoration: BoxDecoration(
+        color: color,
+        shape: BoxShape.circle,
+      ),
+      alignment: Alignment.center,
+      child: Text(
+        initial,
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 18,
+          fontWeight: FontWeight.w700,
         ),
       ),
     );

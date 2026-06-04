@@ -172,6 +172,7 @@ class _VolunteerFeedScreenState extends ConsumerState<VolunteerFeedScreen> {
         ),
       ),
       data: (requests) {
+        final currentUserId = user?.id ?? '';
         final visible = requests.where(_filter.matches).toList();
         final detailList = visible.map(_toDetailData).toList();
 
@@ -212,6 +213,9 @@ class _VolunteerFeedScreenState extends ConsumerState<VolunteerFeedScreen> {
                                 const SizedBox(height: AppSpacing.md - 4),
                             itemBuilder: (_, i) => RequestCard(
                               request: detailList[i],
+                              isOwner: visible[i].createdBy == currentUserId,
+                              isJoined: visible[i].assignedVolunteerIds
+                                  .contains(currentUserId),
                               onTap: () => _openRequest(detailList[i]),
                             ),
                           ),

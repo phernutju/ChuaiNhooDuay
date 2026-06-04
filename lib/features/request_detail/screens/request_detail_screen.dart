@@ -63,11 +63,38 @@ class RequestDetailScreen extends StatefulWidget {
 }
 
 class _RequestDetailScreenState extends State<RequestDetailScreen> {
+  bool _loadingJoinState = true;
+  bool _joined = false;
   bool _checkedIn = false;
 
   static const _appBarTitle = 'Request';
   static const _snackBarMsg = "You're helping!";
   static const _arrivedMsg = "You've arrived!";
+
+  @override
+  void initState() {
+    super.initState();
+    _syncJoinState();
+  }
+
+  Future<void> _syncJoinState() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null || uid.isEmpty || widget.request.id.isEmpty) {
+      if (mounted) setState(() => _loadingJoinState = false);
+      return;
+    }
+    try {
+      final req = await RequestService().getById(widget.request.id);
+      if (mounted) {
+        setState(() {
+          _joined = req.assignedVolunteerIds.contains(uid);
+          _loadingJoinState = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _loadingJoinState = false);
+    }
+  }
 
   bool get _isCreator {
     final uid = FirebaseAuth.instance.currentUser?.uid;
@@ -108,6 +135,7 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
       } catch (_) {}
     }
     if (!mounted) return;
+    setState(() => _joined = true);
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text(_snackBarMsg),
@@ -147,7 +175,8 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final request = widget.request;
-    final joined = context.watch<JoinedRequestsProvider>().isJoined(request.id);
+    final joined = _joined ||
+        context.watch<JoinedRequestsProvider>().isJoined(request.id);
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -194,6 +223,7 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
             _ChatBar(onChat: () => _openChat(joined: false)),
           if (!_isCreator && widget.showActions)
             _BottomBar(
+              loading: _loadingJoinState,
               accepted: joined,
               checkedIn: _checkedIn,
               onHelp: _onHelp,
@@ -444,6 +474,7 @@ class _VerifiedBadge extends StatelessWidget {
 
 class _BottomBar extends StatelessWidget {
   const _BottomBar({
+    required this.loading,
     required this.accepted,
     required this.checkedIn,
     required this.onHelp,
@@ -451,6 +482,7 @@ class _BottomBar extends StatelessWidget {
     this.onChat,
   });
 
+  final bool loading;
   final bool accepted;
   final bool checkedIn;
   final VoidCallback onHelp;
@@ -464,6 +496,40 @@ class _BottomBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bottomInset = MediaQuery.of(context).padding.bottom;
+
+    if (loading) {
+      return Container(
+        padding: EdgeInsets.fromLTRB(
+          AppSpacing.md,
+          AppSpacing.sm,
+          AppSpacing.md,
+          AppSpacing.md + bottomInset,
+        ),
+        decoration: const BoxDecoration(
+          color: AppColors.background,
+          border: Border(top: BorderSide(color: AppColors.border, width: 0.5)),
+        ),
+        child: SizedBox(
+          height: 48,
+          child: Container(
+            decoration: BoxDecoration(
+              color: AppColors.surfaceElevated,
+              borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+            ),
+            child: const Center(
+              child: SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: AppColors.textMuted,
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
 
     final Color btnColor = checkedIn
         ? AppColors.successBg
