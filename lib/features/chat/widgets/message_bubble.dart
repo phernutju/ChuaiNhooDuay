@@ -201,8 +201,6 @@ class _OwnBubble extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(width: 6),
-          const _Avatar(initial: '·'),
         ],
       ),
     );
@@ -227,9 +225,7 @@ class _LocationRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final fallback = message.senderId.isNotEmpty ? message.senderId[0].toUpperCase() : '?';
-    final initial = isOwn
-        ? '·'
-        : (senderName?.isNotEmpty == true ? senderName![0].toUpperCase() : fallback);
+    final initial = senderName?.isNotEmpty == true ? senderName![0].toUpperCase() : fallback;
 
     final card = ConstrainedBox(
       constraints: BoxConstraints(maxWidth: maxW),
@@ -247,8 +243,6 @@ class _LocationRow extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
             card,
-            const SizedBox(width: 6),
-            _Avatar(initial: initial),
           ],
         ),
       );
@@ -284,7 +278,7 @@ class _ImageRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final label = senderName ?? (message.senderId.isNotEmpty ? message.senderId : '?');
-    final initial = isOwn ? '·' : (label.isNotEmpty ? label[0].toUpperCase() : '?');
+    final initial = label.isNotEmpty ? label[0].toUpperCase() : '?';
     final bubble = ImageBubble(
       imageUrl: message.imageUrl!,
       caption: message.text,
@@ -301,8 +295,6 @@ class _ImageRow extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
             bubble,
-            const SizedBox(width: 6),
-            _Avatar(initial: initial),
           ],
         ),
       );
