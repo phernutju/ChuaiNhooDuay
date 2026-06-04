@@ -62,15 +62,9 @@ class RequestService {
       final names = List<String>.from(data['assignedVolunteerNames'] as List? ?? []);
       names.add(name);
 
-      final maxVolunteer = data['max_volunteer'] as int? ?? 1;
-      final newStatus = ids.length >= maxVolunteer
-          ? RequestStatus.matched.name
-          : RequestStatus.waiting.name;
-
       txn.update(ref, {
         'assignedVolunteerIds': ids,
         'assignedVolunteerNames': names,
-        'status': newStatus,
         'updatedAt': Timestamp.now(),
       });
     });
@@ -88,7 +82,7 @@ class RequestService {
   /// dedicated cancelled value — add one if the distinction becomes important.
   Future<void> checkInRequest(String requestId) async {
     await _db.collection('requests').doc(requestId).update({
-      'status': 'matched',
+      'checkedInAt': FieldValue.serverTimestamp(),
       'updatedAt': Timestamp.now(),
     });
   }
@@ -166,10 +160,12 @@ class RequestService {
   Stream<List<RequestModel>> getOpenRequests() {
     return _db
         .collection('requests')
-        .where('status', isEqualTo: 'waiting')
         .snapshots()
         .map((snap) {
-          final list = snap.docs.map(RequestModel.fromFirestore).toList();
+          final list = snap.docs
+              .map(RequestModel.fromFirestore)
+              .where((r) => r.status != RequestStatus.completed)
+              .toList();
           list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
           return list;
         });
