@@ -1,4 +1,4 @@
-# we_are_ready
+# ChuaiNhooDuay
 
 A new Flutter project.
 
