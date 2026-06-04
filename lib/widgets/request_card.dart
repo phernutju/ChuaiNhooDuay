@@ -19,21 +19,20 @@ Color _avatarColorFromName(String name) {
   return colors[hash % colors.length];
 }
 
-/// A "Food & water"-style supply request is fulfilled by dropping off goods, so
-/// it gets a passive "View" action. Anything that needs a person on-site
-/// (medical, shelter, rescue) gets the active red "Respond" action.
-bool _isSupplyRequest(String category) {
-  final upper = category.toUpperCase();
-  return upper.contains('FOOD') ||
-      upper.contains('WATER') ||
-      upper.contains('SUPPL');
-}
+const _kLabelRespond = 'Respond';
+const _kLabelView = 'View';
+const _kLabelYourPost = 'Your Post';
+
+enum _CardAction { respond, view, yourPost }
 
 /// Reusable request card for the volunteer feed (and any future request list).
 ///
 /// Renders a [RequestDetailData] as a tappable card: severity badge,
 /// distance/elapsed meta, category, title, requester chip, and a context-aware
-/// action button (red "Respond" for on-site help, outlined "View" for supplies).
+/// action button:
+///   - "Your Post"  — [isOwner] is true; taps open detail only
+///   - "View"       — user has already joined ([isJoined] is true)
+///   - "Respond"    — user has not joined and is not the owner
 ///
 /// [onTap] fires when the card body is tapped (open detail). [onRespond], when
 /// provided, fires instead for the action button so the feed can "join" the
@@ -44,16 +43,31 @@ class RequestCard extends StatelessWidget {
     required this.request,
     required this.onTap,
     this.onRespond,
+    this.isJoined = false,
+    this.isOwner = false,
   });
 
   final RequestDetailData request;
   final VoidCallback onTap;
   final VoidCallback? onRespond;
+  /// True when the current user's id is in the request's assignedVolunteerIds.
+  final bool isJoined;
+  /// True when the current user is the request creator (createdBy == currentUserId).
+  /// Takes priority over [isJoined]; shows "Your Post" and taps open detail only.
+  final bool isOwner;
 
   @override
   Widget build(BuildContext context) {
-    final isRespond = !_isSupplyRequest(request.category);
-    final actionTap = onRespond ?? onTap;
+    final action = isOwner
+        ? _CardAction.yourPost
+        : isJoined
+            ? _CardAction.view
+            : _CardAction.respond;
+
+    // Owner always opens detail; others use onRespond if provided.
+    final actionTap = action == _CardAction.yourPost
+        ? onTap
+        : (onRespond ?? onTap);
 
     return GestureDetector(
       onTap: onTap,
@@ -113,9 +127,11 @@ class RequestCard extends StatelessWidget {
               children: [
                 _RequesterChip(request: request),
                 const SizedBox(width: AppSpacing.sm),
-                isRespond
-                    ? _RespondButton(onTap: actionTap)
-                    : _ViewButton(onTap: actionTap),
+                switch (action) {
+                  _CardAction.yourPost => _YourPostButton(onTap: actionTap),
+                  _CardAction.view => _ViewButton(onTap: actionTap),
+                  _CardAction.respond => _RespondButton(onTap: actionTap),
+                },
               ],
             ),
           ],
@@ -273,7 +289,7 @@ class _RespondButton extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              'Respond',
+              _kLabelRespond,
               style: TextStyle(
                 color: Colors.white,
                 fontSize: 14,
@@ -312,7 +328,7 @@ class _ViewButton extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              'View',
+              _kLabelView,
               style: TextStyle(
                 color: AppColors.textPrimary,
                 fontSize: 14,
@@ -321,6 +337,45 @@ class _ViewButton extends StatelessWidget {
             ),
             SizedBox(width: 6),
             Icon(Icons.arrow_forward, color: AppColors.textSecondary, size: 16),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _YourPostButton extends StatelessWidget {
+  const _YourPostButton({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md,
+          vertical: AppSpacing.sm + 2,
+        ),
+        decoration: BoxDecoration(
+          color: AppColors.surfaceElevated,
+          borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+          border: Border.all(color: AppColors.border, width: 1),
+        ),
+        child: const Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.person_outline, color: AppColors.textMuted, size: 14),
+            SizedBox(width: 4),
+            Text(
+              _kLabelYourPost,
+              style: TextStyle(
+                color: AppColors.textMuted,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ],
         ),
       ),

@@ -4,16 +4,14 @@ import 'package:provider/provider.dart';
 import '../../constants/constants.dart';
 import '../../models/request_model.dart';
 import '../../providers/providers.dart';
+import '../../services/request_service.dart';
 import '../request_detail/mock/request_mock_data.dart';
 import '../request_detail/screens/request_detail_screen.dart';
 import '../widgets/app_widgets.dart';
 import '../../utils/check_in_service.dart';
 
-/// ACTIVE tab — the requests the volunteer has tapped "Respond" on. Sourced
-/// from [JoinedRequestsProvider]; empty until the volunteer joins something.
-///
-/// Each row can be "checked-in" (confirms the volunteer arrived on-site) behind
-/// a confirmation dialog to avoid accidental taps.
+/// ACTIVE tab — requests the volunteer has joined, loaded from Firestore via
+/// [RequestService.getJoinedRequests]. Check-in state is tracked in-session.
 class ActiveScreen extends StatefulWidget {
   const ActiveScreen({super.key});
 
@@ -22,6 +20,8 @@ class ActiveScreen extends StatefulWidget {
 }
 
 class _ActiveScreenState extends State<ActiveScreen> {
+  final _checkedInIds = <String>{};
+
   void _openRequest(RequestDetailData request) {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
@@ -32,7 +32,6 @@ class _ActiveScreenState extends State<ActiveScreen> {
 
   static const _arrivedMsg = "Checked in — you're on your way";
 
-  /// Confirms then verifies location before marking checked-in.
   Future<void> _confirmCheckIn(RequestDetailData request) async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -47,7 +46,7 @@ class _ActiveScreenState extends State<ActiveScreen> {
       requestLng: request.lng,
     );
     if (!mounted || !ok) return;
-    context.read<JoinedRequestsProvider>().checkIn(request.id);
+    setState(() => _checkedInIds.add(request.id));
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text(_arrivedMsg),
@@ -57,9 +56,29 @@ class _ActiveScreenState extends State<ActiveScreen> {
     );
   }
 
+  RequestDetailData _toDetailData(RequestModel m) => RequestDetailData(
+        id: m.id,
+        category: m.requestType.name,
+        urgencyLevel: m.urgencyLevel,
+        title: m.title,
+        distanceKm: null,
+        minutesAgo: DateTime.now().difference(m.createdAt).inMinutes,
+        postedAt: m.createdAt,
+        requesterName: m.isAnonymous ? 'Anonymous' : m.requesterName,
+        requesterLocation: m.location.address,
+        isAnonymous: m.isAnonymous,
+        isVerified: false,
+        description: m.description,
+        skillsNeeded: const [],
+        lat: m.location.coordinates.latitude,
+        lng: m.location.coordinates.longitude,
+        createdBy: m.createdBy,
+        requestStatus: m.status,
+      );
+
   @override
   Widget build(BuildContext context) {
-    final items = context.watch<JoinedRequestsProvider>().all;
+    final userId = context.watch<AuthProvider>().userModel?.id ?? '';
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -77,25 +96,48 @@ class _ActiveScreenState extends State<ActiveScreen> {
               child: Text('Active', style: AppTextStyles.headlineLarge),
             ),
             Expanded(
-              child: items.isEmpty
+              child: userId.isEmpty
                   ? const _EmptyState()
-                  : ListView.separated(
-                      padding: const EdgeInsets.fromLTRB(
-                        AppSpacing.md,
-                        0,
-                        AppSpacing.md,
-                        AppSpacing.md,
-                      ),
-                      itemCount: items.length,
-                      separatorBuilder: (_, _) =>
-                          const SizedBox(height: AppSpacing.sm + 2),
-                      itemBuilder: (_, i) => _JoinedRow(
-                        joined: items[i],
-                        onTap: () => _openRequest(items[i].request),
-                        onCheckIn: items[i].status == JoinedStatus.active
-                            ? () => _confirmCheckIn(items[i].request)
-                            : null,
-                      ),
+                  : StreamBuilder<List<RequestModel>>(
+                      stream: RequestService().getJoinedRequests(userId),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return const Center(
+                            child: CircularProgressIndicator(),
+                          );
+                        }
+                        final models = snapshot.data ?? [];
+                        if (models.isEmpty) return const _EmptyState();
+                        final items = models.map((m) {
+                          final detail = _toDetailData(m);
+                          return JoinedRequest(
+                            request: detail,
+                            joinedAt: m.updatedAt,
+                            status: _checkedInIds.contains(m.id)
+                                ? JoinedStatus.checkedIn
+                                : JoinedStatus.active,
+                          );
+                        }).toList();
+                        return ListView.separated(
+                          padding: const EdgeInsets.fromLTRB(
+                            AppSpacing.md,
+                            0,
+                            AppSpacing.md,
+                            AppSpacing.md,
+                          ),
+                          itemCount: items.length,
+                          separatorBuilder: (_, _) =>
+                              const SizedBox(height: AppSpacing.sm + 2),
+                          itemBuilder: (_, i) => _JoinedRow(
+                            joined: items[i],
+                            onTap: () => _openRequest(items[i].request),
+                            onCheckIn: items[i].status == JoinedStatus.active
+                                ? () => _confirmCheckIn(items[i].request)
+                                : null,
+                          ),
+                        );
+                      },
                     ),
             ),
           ],
@@ -327,7 +369,7 @@ class _EmptyState extends StatelessWidget {
             Icon(Icons.bolt_outlined, color: AppColors.textMuted, size: 48),
             SizedBox(height: AppSpacing.md),
             Text(
-              "You haven't joined any requests yet.\nTap “Respond” on the feed to help out.",
+              "You haven't joined any requests yet.\nTap 'Respond' on the feed to help out.",
               textAlign: TextAlign.center,
               style: AppTextStyles.bodySmall,
             ),
