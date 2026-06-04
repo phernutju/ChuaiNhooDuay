@@ -114,7 +114,7 @@ class _ActiveScreenState extends State<ActiveScreen> {
                           return JoinedRequest(
                             request: detail,
                             joinedAt: m.volunteerJoinedAt[userId] ?? m.updatedAt,
-                            status: _checkedInIds.contains(m.id)
+                            status: (m.checkedInAt != null || _checkedInIds.contains(m.id))
                                 ? JoinedStatus.checkedIn
                                 : JoinedStatus.active,
                           );

@@ -88,6 +88,7 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
       if (mounted) {
         setState(() {
           _joined = req.assignedVolunteerIds.contains(uid);
+          _checkedIn = _joined && req.checkedInAt != null;
           _loadingJoinState = false;
         });
       }
