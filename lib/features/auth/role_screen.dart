@@ -52,12 +52,15 @@ class _RoleScreenState extends State<RoleScreen> {
                 children: [
                   BackTile(onTap: () => context.pop()),
                   const SizedBox(width: 14),
-                  const Text(
-                    'STEP 2 OF 2 · CHOOSE YOUR ROLE',
-                    style: TextStyle(
-                      color: AppColors.textMuted,
-                      fontSize: 12,
-                      letterSpacing: 0.5,
+                  const Flexible(
+                    child: Text(
+                      'STEP 2 OF 2 · CHOOSE YOUR ROLE',
+                      style: TextStyle(
+                        color: AppColors.textMuted,
+                        fontSize: 12,
+                        letterSpacing: 0.5,
+                      ),
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                 ],

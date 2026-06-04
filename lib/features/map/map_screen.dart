@@ -93,7 +93,12 @@ class _MapPlaceholderScreenState extends State<MapPlaceholderScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(request.title, style: AppTextStyles.titleMedium),
+            Text(
+              request.title,
+              style: AppTextStyles.titleMedium,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
             const SizedBox(height: AppSpacing.xs),
             _UrgencyChip(request.urgencyLevel),
             const SizedBox(height: AppSpacing.lg),

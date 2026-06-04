@@ -159,8 +159,15 @@ class _OtpScreenState extends State<OtpScreen> {
               ),
               const SizedBox(height: 28),
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: List.generate(_length, _otpBox),
+                children: List.generate(
+                  _length,
+                  (i) => Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 2),
+                      child: _otpBox(i),
+                    ),
+                  ),
+                ),
               ),
               const SizedBox(height: 24),
               Center(
@@ -225,7 +232,6 @@ class _OtpScreenState extends State<OtpScreen> {
   Widget _otpBox(int index) {
     final filled = _controllers[index].text.isNotEmpty;
     return SizedBox(
-      width: 48,
       height: 60,
       child: Focus(
         onKeyEvent: (node, event) => _onKey(index, event, node),

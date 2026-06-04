@@ -451,9 +451,13 @@ class _RequesterCard extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        Text(
-                          request.requesterName,
-                          style: AppTextStyles.titleMedium,
+                        Flexible(
+                          child: Text(
+                            request.requesterName,
+                            style: AppTextStyles.titleMedium,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
                         if (request.isVerified) ...[
                           const SizedBox(width: AppSpacing.sm),
@@ -464,6 +468,8 @@ class _RequesterCard extends StatelessWidget {
                     Text(
                       request.requesterLocation,
                       style: AppTextStyles.bodySmall,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
                 ),
@@ -646,13 +652,13 @@ class _BottomBar extends StatelessWidget {
               onTap: onComplete,
               child: Container(
                 width: double.infinity,
-                height: 48,
+                padding: const EdgeInsets.symmetric(vertical: 10),
                 decoration: BoxDecoration(
                   color: const Color(0xFFE24B4A),
                   borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
                 ),
                 child: const Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
                       'Mark as complete',

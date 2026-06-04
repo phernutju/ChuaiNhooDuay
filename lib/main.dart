@@ -102,6 +102,7 @@ class _WeAreReadyAppState extends State<WeAreReadyApp> {
             return MaterialApp(
               debugShowCheckedModeBanner: false,
               theme: _theme,
+              builder: _dismissKeyboard,
               home: const _SplashScreen(),
             );
           }
@@ -110,11 +111,20 @@ class _WeAreReadyAppState extends State<WeAreReadyApp> {
               debugShowCheckedModeBanner: false,
               title: AppInfo.appName,
               theme: _theme,
+              builder: _dismissKeyboard,
               routerConfig: _router,
             ),
           );
         },
       ),
+    );
+  }
+
+  static Widget _dismissKeyboard(BuildContext context, Widget? child) {
+    return GestureDetector(
+      onTap: () => FocusScope.of(context).unfocus(),
+      behavior: HitTestBehavior.opaque,
+      child: child!,
     );
   }
 

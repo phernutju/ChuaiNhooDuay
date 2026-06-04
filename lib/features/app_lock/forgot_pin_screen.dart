@@ -149,7 +149,6 @@ class _ForgotPinScreenState extends State<ForgotPinScreen> {
     final filled = _controllers[index].text.isNotEmpty;
     final disabled = _sending || _verifying;
     return SizedBox(
-      width: 48,
       height: 60,
       child: Focus(
         onKeyEvent: (node, event) => _onKey(index, event, node),
@@ -240,8 +239,15 @@ class _ForgotPinScreenState extends State<ForgotPinScreen> {
               ),
               const SizedBox(height: 28),
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: List.generate(_otpLength, _otpBox),
+                children: List.generate(
+                  _otpLength,
+                  (i) => Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 2),
+                      child: _otpBox(i),
+                    ),
+                  ),
+                ),
               ),
               const SizedBox(height: 24),
               Center(

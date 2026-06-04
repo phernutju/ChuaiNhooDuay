@@ -440,6 +440,8 @@ class _LocationCard extends ConsumerWidget {
                         state.locationAddress,
                         style: const TextStyle(
                             color: Colors.white, fontSize: 13),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       )
                     : Text(
                         state.error ?? 'Location unavailable',
@@ -448,6 +450,8 @@ class _LocationCard extends ConsumerWidget {
                                 ? kCriticalColor
                                 : kTextSecondary,
                             fontSize: 13),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
           ),
           if (state.isLocationLoading)
