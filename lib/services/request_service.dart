@@ -86,6 +86,13 @@ class RequestService {
   ///
   /// Uses [RequestStatus.completed] for cancellation since the enum has no
   /// dedicated cancelled value — add one if the distinction becomes important.
+  Future<void> checkInRequest(String requestId) async {
+    await _db.collection('requests').doc(requestId).update({
+      'status': 'matched',
+      'updatedAt': Timestamp.now(),
+    });
+  }
+
   Future<void> cancelRequest(String requestId) async {
     await _db.collection('requests').doc(requestId).update({
       'status': RequestStatus.completed.name,
@@ -101,6 +108,7 @@ class RequestService {
   Future<void> completeRequest(String requestId) async {
     await _db.collection('requests').doc(requestId).update({
       'status': RequestStatus.completed.name,
+      'completedAt': FieldValue.serverTimestamp(),
       'updatedAt': Timestamp.now(),
     });
 
@@ -213,10 +221,8 @@ class RequestService {
   Future<void> _notify(Future<void> Function() fn) async {
     try {
       await fn();
-    } on NotificationException {
-      rethrow;
     } catch (e) {
-      debugPrint('[RequestService] notification failed: $e');
+      debugPrint('[RequestService] notification failed (swallowed): $e');
     }
   }
 }

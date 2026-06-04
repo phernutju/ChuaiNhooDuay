@@ -4,7 +4,7 @@ enum RequestType { medical, shelter, water, transport, rescue, evacuate, supplie
 
 enum UrgencyLevel { critical, urgent, general }
 
-enum RequestStatus { waiting, matched, completed }
+enum RequestStatus { waiting, assigned, matched, completed }
 
 class RequestLocation {
   final String address;

@@ -4,12 +4,45 @@ import 'package:go_router/go_router.dart';
 import '../../constants/constants.dart';
 import 'requester_controller.dart';
 
-class PostConfirmationScreen extends ConsumerWidget {
+class PostConfirmationScreen extends ConsumerStatefulWidget {
   final int volunteerCount;
   const PostConfirmationScreen({super.key, required this.volunteerCount});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<PostConfirmationScreen> createState() =>
+      _PostConfirmationScreenState();
+}
+
+class _PostConfirmationScreenState extends ConsumerState<PostConfirmationScreen>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _scale;
+  late final Animation<double> _opacity;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1000),
+    )..repeat(reverse: true);
+
+    _scale = Tween<double>(begin: 1.0, end: 1.5).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+    _opacity = Tween<double>(begin: 1.0, end: 0.0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: kBgColor,
       body: SafeArea(
@@ -19,14 +52,46 @@ class PostConfirmationScreen extends ConsumerWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Container(
+                SizedBox(
                   width: 120,
                   height: 120,
-                  decoration: const BoxDecoration(
-                    color: kUrgentColor,
-                    shape: BoxShape.circle,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      // Outer ring — pulsing
+                      ScaleTransition(
+                        scale: _scale,
+                        child: FadeTransition(
+                          opacity: _opacity,
+                          child: Container(
+                            width: 80,
+                            height: 80,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: const Color(0xFFEF9F27),
+                                width: 3,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      // Inner circle — static
+                      Container(
+                        width: 80,
+                        height: 80,
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFEF9F27),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.check,
+                          color: Colors.white,
+                          size: 40,
+                        ),
+                      ),
+                    ],
                   ),
-                  child: const Icon(Icons.check, color: Colors.white, size: 60),
                 ),
                 const SizedBox(height: 32),
                 const Text(
@@ -43,51 +108,6 @@ class PostConfirmationScreen extends ConsumerWidget {
                   style: TextStyle(color: kTextSecondary, fontSize: 15, height: 1.5),
                 ),
                 const SizedBox(height: 32),
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 24),
-                  decoration: BoxDecoration(
-                    color: kCardColor,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Column(
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Container(
-                            width: 10,
-                            height: 10,
-                            decoration: const BoxDecoration(
-                              color: kUrgentColor,
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            '$volunteerCount',
-                            style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 52,
-                                fontWeight: FontWeight.bold,
-                                height: 1),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'VOLUNTEERS NOTIFIED',
-                        style: TextStyle(
-                            color: kTextSecondary,
-                            fontSize: 11,
-                            letterSpacing: 1.4,
-                            fontWeight: FontWeight.bold),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 24),
                 SizedBox(
                   width: double.infinity,
                   height: 52,
@@ -99,8 +119,7 @@ class PostConfirmationScreen extends ConsumerWidget {
                     icon: const Icon(Icons.arrow_forward, size: 18),
                     label: const Text(
                       'View my requests',
-                      style: TextStyle(
-                          fontSize: 16, fontWeight: FontWeight.bold),
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                     ),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: kPrimaryBlue,

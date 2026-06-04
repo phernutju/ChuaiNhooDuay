@@ -121,10 +121,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Padding(
-                padding: EdgeInsets.only(bottom: AppSpacing.lg),
-                child: Text('Profile', style: AppTextStyles.headlineLarge),
-              ),
+              if (role == UserRole.civilian)
+                Row(
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.arrow_back,
+                          color: AppColors.textPrimary),
+                      onPressed: () => Navigator.of(context).pop(),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
+                    const Text('Profile', style: AppTextStyles.headlineLarge),
+                  ],
+                )
+              else
+                const Padding(
+                  padding: EdgeInsets.only(bottom: AppSpacing.lg),
+                  child: Text('Profile', style: AppTextStyles.headlineLarge),
+                ),
               Center(
                 child: Container(
                   width: 88,
