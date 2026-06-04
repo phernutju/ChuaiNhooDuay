@@ -100,11 +100,27 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
   /// The single place a request joins the volunteer's Active list.
   Future<void> _onHelp() async {
     context.read<JoinedRequestsProvider>().join(widget.request);
-    final uid = FirebaseAuth.instance.currentUser?.uid;
+    // Wait for auth state to be ready on web — currentUser can be null on first render
+    User? user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      user = await FirebaseAuth.instance.authStateChanges().first;
+    }
+    final uid = user?.uid;
+    debugPrint('[_onHelp] uid=$uid requestId=${widget.request.id}');
     if (uid != null && widget.request.id.isNotEmpty) {
       try {
         await RequestService().joinRequest(widget.request.id, uid);
-      } catch (_) {}
+        debugPrint('[_onHelp] joinRequest SUCCESS');
+      } catch (e) {
+        debugPrint('[_onHelp] joinRequest FAILED: $e');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+          );
+        }
+      }
+    } else {
+      debugPrint('[_onHelp] SKIPPED uid=$uid requestId=${widget.request.id}');
     }
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
@@ -126,6 +142,21 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
     await _onCheckIn();
   }
 
+  Future<void> _completeRequest() async {
+    try {
+      await RequestService().completeRequest(widget.request.id);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Thank you for helping!'),
+          backgroundColor: AppColors.success,
+          duration: Duration(seconds: 3),
+        ),
+      );
+      Navigator.of(context).maybePop();
+    } catch (_) {}
+  }
+
   Future<void> _onCheckIn() async {
     final ok = await performCheckIn(
       context: context,
@@ -134,6 +165,10 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
     );
     if (!mounted || !ok) return;
     setState(() => _checkedIn = true);
+    try {
+      await RequestService().checkInRequest(widget.request.id);
+    } catch (_) {}
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text(_arrivedMsg),
@@ -200,6 +235,7 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
               onHelp: _onHelp,
               onCheckIn: _confirmCheckIn,
               onChat: joined ? () => _openChat(joined: true) : null,
+              onComplete: _checkedIn || joined ? _completeRequest : null,
             ),
         ],
       ),
@@ -515,6 +551,7 @@ class _BottomBar extends StatelessWidget {
     required this.onHelp,
     required this.onCheckIn,
     this.onChat,
+    this.onComplete,
   });
 
   final bool accepted;
@@ -522,6 +559,7 @@ class _BottomBar extends StatelessWidget {
   final VoidCallback onHelp;
   final VoidCallback onCheckIn;
   final VoidCallback? onChat;
+  final VoidCallback? onComplete;
 
   static const _helpLabel = "I'll help";
   static const _checkInLabel = 'Check in';
@@ -600,7 +638,40 @@ class _BottomBar extends StatelessWidget {
         color: AppColors.background,
         border: Border(top: BorderSide(color: AppColors.border, width: 0.5)),
       ),
-      child: accepted
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (onComplete != null) ...[
+            GestureDetector(
+              onTap: onComplete,
+              child: Container(
+                width: double.infinity,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE24B4A),
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+                ),
+                child: const Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      'Mark as complete',
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold),
+                    ),
+                    Text(
+                      "Tap when you're done helping",
+                      style: TextStyle(color: Colors.white70, fontSize: 11),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+          ],
+          accepted
           ? Row(
               children: [
                 GestureDetector(
@@ -627,6 +698,8 @@ class _BottomBar extends StatelessWidget {
           : Row(
               children: [Expanded(child: mainBtn)],
             ),
+        ],
+      ),
     );
   }
 }

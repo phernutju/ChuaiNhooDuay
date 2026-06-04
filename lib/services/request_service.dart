@@ -43,15 +43,24 @@ class RequestService {
   /// Fetches the updated request document after the write so the notification
   /// reflects the latest volunteer list.
   Future<void> joinRequest(String requestId, String volunteerId) async {
-    final user = await UserService().getUser(volunteerId);
-    final name = user?.name?.isNotEmpty == true ? user!.name! : 'Volunteer';
-
+    // Update status first — this must succeed regardless of anything else.
     await _db.collection('requests').doc(requestId).update({
       'assignedVolunteerIds': FieldValue.arrayUnion([volunteerId]),
-      'assignedVolunteerNames': FieldValue.arrayUnion([name]),
-      'status': 'matched',
+      'status': 'assigned',
       'updatedAt': Timestamp.now(),
     });
+
+    // Fetch name separately; failure here does not roll back the update above.
+    String name = 'Volunteer';
+    try {
+      final user = await UserService().getUser(volunteerId);
+      if (user?.name?.isNotEmpty == true) {
+        name = user!.name!;
+        await _db.collection('requests').doc(requestId).update({
+          'assignedVolunteerNames': FieldValue.arrayUnion([name]),
+        });
+      }
+    } catch (_) {}
 
     final snap = await _db.collection('requests').doc(requestId).get();
     final updated = RequestModel.fromFirestore(snap);
@@ -64,6 +73,13 @@ class RequestService {
   ///
   /// Uses [RequestStatus.completed] for cancellation since the enum has no
   /// dedicated cancelled value — add one if the distinction becomes important.
+  Future<void> checkInRequest(String requestId) async {
+    await _db.collection('requests').doc(requestId).update({
+      'status': 'matched',
+      'updatedAt': Timestamp.now(),
+    });
+  }
+
   Future<void> cancelRequest(String requestId) async {
     await _db.collection('requests').doc(requestId).update({
       'status': RequestStatus.completed.name,
@@ -79,6 +95,7 @@ class RequestService {
   Future<void> completeRequest(String requestId) async {
     await _db.collection('requests').doc(requestId).update({
       'status': RequestStatus.completed.name,
+      'completedAt': FieldValue.serverTimestamp(),
       'updatedAt': Timestamp.now(),
     });
 
@@ -175,10 +192,8 @@ class RequestService {
   Future<void> _notify(Future<void> Function() fn) async {
     try {
       await fn();
-    } on NotificationException {
-      rethrow;
     } catch (e) {
-      debugPrint('[RequestService] notification failed: $e');
+      debugPrint('[RequestService] notification failed (swallowed): $e');
     }
   }
 }
