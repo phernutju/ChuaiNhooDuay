@@ -70,6 +70,7 @@ class _MapPlaceholderScreenState extends State<MapPlaceholderScreen> {
       lat: lat,
       lng: lng,
       distanceKm: dist,
+      createdBy: request.createdBy,
     );
 
     final screenContext = context;

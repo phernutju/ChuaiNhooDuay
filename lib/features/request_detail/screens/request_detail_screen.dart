@@ -98,6 +98,7 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
 
   bool get _isCreator {
     final uid = FirebaseAuth.instance.currentUser?.uid;
+    print('_isCreator check - uid: $uid, createdBy: ${widget.request.createdBy}');
     return uid != null &&
         uid.isNotEmpty &&
         uid == widget.request.createdBy;
@@ -255,7 +256,10 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
             ),
           ),
           if (_isCreator)
-            _ChatBar(onChat: () => _openChat(joined: false)),
+            _ChatBar(
+              onChat: () => _openChat(joined: false),
+              onComplete: _completeRequest,
+            ),
           if (!_isCreator && widget.showActions)
             _BottomBar(
               loading: _loadingJoinState,
@@ -264,7 +268,6 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
               onHelp: _onHelp,
               onCheckIn: _confirmCheckIn,
               onChat: joined ? () => _openChat(joined: true) : null,
-              onComplete: _checkedIn || joined ? _completeRequest : null,
             ),
         ],
       ),
@@ -516,7 +519,6 @@ class _BottomBar extends StatelessWidget {
     required this.onHelp,
     required this.onCheckIn,
     this.onChat,
-    this.onComplete,
   });
 
   final bool loading;
@@ -525,7 +527,6 @@ class _BottomBar extends StatelessWidget {
   final VoidCallback onHelp;
   final VoidCallback onCheckIn;
   final VoidCallback? onChat;
-  final VoidCallback? onComplete;
 
   static const _helpLabel = "I'll help";
   static const _checkInLabel = 'Check in';
@@ -641,36 +642,6 @@ class _BottomBar extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          if (onComplete != null) ...[
-            GestureDetector(
-              onTap: onComplete,
-              child: Container(
-                width: double.infinity,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFE24B4A),
-                  borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-                ),
-                child: const Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      'Mark as complete',
-                      style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 15,
-                          fontWeight: FontWeight.bold),
-                    ),
-                    Text(
-                      "Tap when you're done helping",
-                      style: TextStyle(color: Colors.white70, fontSize: 11),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: AppSpacing.sm),
-          ],
           accepted
           ? Row(
               children: [
@@ -705,42 +676,67 @@ class _BottomBar extends StatelessWidget {
 }
 
 class _ChatBar extends StatelessWidget {
-  const _ChatBar({required this.onChat});
+  const _ChatBar({required this.onChat, this.onComplete});
 
   final VoidCallback onChat;
+  final VoidCallback? onComplete;
 
   @override
   Widget build(BuildContext context) {
     final bottomInset = MediaQuery.of(context).padding.bottom;
     return Container(
       padding: EdgeInsets.fromLTRB(
-        AppSpacing.md,
-        AppSpacing.sm,
-        AppSpacing.md,
-        AppSpacing.md + bottomInset,
-      ),
+        AppSpacing.md, AppSpacing.sm, AppSpacing.md, AppSpacing.md + bottomInset),
       decoration: const BoxDecoration(
         color: AppColors.background,
         border: Border(top: BorderSide(color: AppColors.border, width: 0.5)),
       ),
-      child: GestureDetector(
-        onTap: onChat,
-        child: Container(
-          height: 48,
-          decoration: BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-            border: Border.all(color: AppColors.border, width: 1),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (onComplete != null) ...[
+            GestureDetector(
+              onTap: onComplete,
+              child: Container(
+                width: double.infinity,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE24B4A),
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+                ),
+                child: const Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text('Mark as complete',
+                      style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold)),
+                    Text('Tap when your request is resolved',
+                      style: TextStyle(color: Colors.white70, fontSize: 11)),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+          ],
+          GestureDetector(
+            onTap: onChat,
+            child: Container(
+              height: 48,
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+                border: Border.all(color: AppColors.border, width: 1),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.chat_bubble_outline, color: AppColors.textPrimary, size: 20),
+                  const SizedBox(width: AppSpacing.sm),
+                  Text('Chat', style: AppTextStyles.button),
+                ],
+              ),
+            ),
           ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.chat_bubble_outline, color: AppColors.textPrimary, size: 20),
-              const SizedBox(width: AppSpacing.sm),
-              Text('Chat', style: AppTextStyles.button),
-            ],
-          ),
-        ),
+        ],
       ),
     );
   }
