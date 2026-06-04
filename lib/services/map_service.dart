@@ -8,17 +8,18 @@ class MapService {
 
   final FirebaseFirestore _db;
 
-  /// Live stream of all requests with status == "open".
-  /// isFull filtering is done client-side in [MapProvider] because isFull
-  /// is a computed getter and cannot be queried server-side.
+  /// Live stream of all requests that are NOT completed.
+  /// Markers stay on map from waiting → assigned → matched
+  /// and only disappear when status becomes completed.
   Stream<List<RequestModel>> getOpenRequests() {
     return _db
         .collection('requests')
-        .where('status', isEqualTo: 'waiting')
         .snapshots()
         .map(
-          (snap) =>
-              snap.docs.map((doc) => RequestModel.fromFirestore(doc)).toList(),
+          (snap) => snap.docs
+              .map((doc) => RequestModel.fromFirestore(doc))
+              .where((r) => r.status != RequestStatus.completed)
+              .toList(),
         );
   }
 }

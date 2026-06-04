@@ -56,7 +56,6 @@ class MapProvider extends ChangeNotifier {
       return;
     }
     requestsInRadius = openRequests.where((r) {
-      if (r.isFull) return false;
       final point = LatLng(
         r.location.coordinates.latitude,
         r.location.coordinates.longitude,

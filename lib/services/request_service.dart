@@ -93,12 +93,14 @@ class RequestService {
     final data = snap.data() as Map<String, dynamic>;
     final ids = List<String>.from(data['assignedVolunteerIds'] as List? ?? []);
     final maxVolunteer = data['max_volunteer'] as int? ?? 1;
+    final updates = <String, dynamic>{
+      'checkedInAt': FieldValue.serverTimestamp(),
+      'updatedAt': Timestamp.now(),
+    };
     if (ids.length >= maxVolunteer) {
-      await _db.collection('requests').doc(requestId).update({
-        'status': RequestStatus.matched.name,
-        'updatedAt': Timestamp.now(),
-      });
+      updates['status'] = RequestStatus.matched.name;
     }
+    await _db.collection('requests').doc(requestId).update(updates);
   }
 
   Future<void> cancelRequest(String requestId) async {
@@ -189,7 +191,10 @@ class RequestService {
         .where('status', whereIn: ['waiting', 'assigned'])
         .snapshots()
         .map((snap) {
-          final list = snap.docs.map(RequestModel.fromFirestore).toList();
+          final list = snap.docs
+              .map(RequestModel.fromFirestore)
+              .where((r) => r.status != RequestStatus.completed)
+              .toList();
           list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
           return list;
         });
