@@ -11,8 +11,6 @@ abstract class _C {
   static const textPrimary  = Color(0xFFEEEEEE);
   static const textMuted    = Color(0xFF555555);
   static const senderBlue   = Color(0xFF4A8FCE);
-  static const seenGray     = Color(0xFF555555);
-  static const seenGreen    = Color(0xFF5FA85F);
 }
 
 const _ownRadius = BorderRadius.only(
@@ -62,7 +60,7 @@ class MessageBubble extends StatelessWidget {
 
       case MessageType.message:
         return isOwn
-            ? _OwnBubble(message: message, maxW: maxW)
+            ? _OwnBubble(message: message, maxW: maxW, currentUserId: currentUserId)
             : _TheirBubble(message: message, maxW: maxW, senderName: senderName);
     }
   }
@@ -140,14 +138,23 @@ class _TheirBubble extends StatelessWidget {
 // ─── Own bubble (right) ───────────────────────────────────────────────────────
 
 class _OwnBubble extends StatelessWidget {
-  const _OwnBubble({required this.message, required this.maxW});
+  const _OwnBubble({
+    required this.message,
+    required this.maxW,
+    required this.currentUserId,
+  });
 
   final MessageModel message;
   final double maxW;
+  final String currentUserId;
 
   @override
   Widget build(BuildContext context) {
-    final seen = message.seenCount >= 2;
+    final readCount = message.seenBy.where((id) => id != currentUserId).length;
+    final statusLabel = readCount == 0
+        ? 'Sent · ${_fmt(message.createdAt)}'
+        : 'Read $readCount · ${_fmt(message.createdAt)}';
+
     return Padding(
       padding: const EdgeInsets.only(right: 10, left: 72, top: 1, bottom: 1),
       child: Row(
@@ -176,27 +183,13 @@ class _OwnBubble extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 2),
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      '✓✓',
-                      style: GoogleFonts.ibmPlexSansThai(
-                        fontSize: 11,
-                        color: seen ? _C.seenGreen : _C.seenGray,
-                        height: 1,
-                      ),
-                    ),
-                    const SizedBox(width: 3),
-                    Text(
-                      _fmt(message.createdAt),
-                      style: GoogleFonts.ibmPlexSansThai(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w400,
-                        color: _C.textMuted,
-                      ),
-                    ),
-                  ],
+                Text(
+                  statusLabel,
+                  style: GoogleFonts.ibmPlexSansThai(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w400,
+                    color: _C.textMuted,
+                  ),
                 ),
               ],
             ),

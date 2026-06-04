@@ -113,7 +113,7 @@ class _ActiveScreenState extends State<ActiveScreen> {
                           final detail = _toDetailData(m);
                           return JoinedRequest(
                             request: detail,
-                            joinedAt: m.updatedAt,
+                            joinedAt: m.volunteerJoinedAt[userId] ?? m.updatedAt,
                             status: _checkedInIds.contains(m.id)
                                 ? JoinedStatus.checkedIn
                                 : JoinedStatus.active,

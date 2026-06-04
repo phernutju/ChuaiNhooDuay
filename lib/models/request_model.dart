@@ -39,6 +39,8 @@ class RequestModel {
   final bool isAnonymous;
   final DateTime createdAt;
   final DateTime updatedAt;
+  /// Per-volunteer join timestamps: { volunteerId → joinedAt }
+  final Map<String, DateTime> volunteerJoinedAt;
 
   RequestModel({
     required this.id,
@@ -57,6 +59,7 @@ class RequestModel {
     this.isAnonymous = false,
     required this.createdAt,
     required this.updatedAt,
+    this.volunteerJoinedAt = const {},
   });
 
   factory RequestModel.fromFirestore(DocumentSnapshot doc) {
@@ -91,6 +94,8 @@ class RequestModel {
           : [],
       createdAt: (data['createdAt'] as Timestamp).toDate(),
       updatedAt: (data['updatedAt'] as Timestamp).toDate(),
+      volunteerJoinedAt: (data['volunteerJoinedAt'] as Map<String, dynamic>? ?? {})
+          .map((k, v) => MapEntry(k, (v as Timestamp).toDate())),
     );
   }
 
@@ -110,6 +115,8 @@ class RequestModel {
         'assignedVolunteerNames': assignedVolunteerNames,
         'createdAt': Timestamp.fromDate(createdAt),
         'updatedAt': Timestamp.fromDate(updatedAt),
+        'volunteerJoinedAt': volunteerJoinedAt
+            .map((k, v) => MapEntry(k, Timestamp.fromDate(v))),
       };
 
   bool get isFull => assignedVolunteerIds.length >= maxVolunteer;
@@ -131,6 +138,7 @@ class RequestModel {
     bool? isAnonymous,
     DateTime? createdAt,
     DateTime? updatedAt,
+    Map<String, DateTime>? volunteerJoinedAt,
   }) {
     return RequestModel(
       id: id ?? this.id,
@@ -149,6 +157,7 @@ class RequestModel {
       isAnonymous: isAnonymous ?? this.isAnonymous,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      volunteerJoinedAt: volunteerJoinedAt ?? this.volunteerJoinedAt,
     );
   }
 }

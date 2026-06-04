@@ -65,12 +65,13 @@ class RequestService {
       final maxVolunteer = data['max_volunteer'] as int? ?? 1;
       final newStatus = ids.length >= maxVolunteer
           ? RequestStatus.matched.name
-          : RequestStatus.waiting.name;
+          : RequestStatus.assigned.name;
 
       txn.update(ref, {
         'assignedVolunteerIds': ids,
         'assignedVolunteerNames': names,
         'status': newStatus,
+        'volunteerJoinedAt.$volunteerId': Timestamp.now(),
         'updatedAt': Timestamp.now(),
       });
     });
@@ -87,10 +88,17 @@ class RequestService {
   /// Uses [RequestStatus.completed] for cancellation since the enum has no
   /// dedicated cancelled value — add one if the distinction becomes important.
   Future<void> checkInRequest(String requestId) async {
-    await _db.collection('requests').doc(requestId).update({
-      'status': 'matched',
-      'updatedAt': Timestamp.now(),
-    });
+    final snap = await _db.collection('requests').doc(requestId).get();
+    if (!snap.exists) return;
+    final data = snap.data() as Map<String, dynamic>;
+    final ids = List<String>.from(data['assignedVolunteerIds'] as List? ?? []);
+    final maxVolunteer = data['max_volunteer'] as int? ?? 1;
+    if (ids.length >= maxVolunteer) {
+      await _db.collection('requests').doc(requestId).update({
+        'status': RequestStatus.matched.name,
+        'updatedAt': Timestamp.now(),
+      });
+    }
   }
 
   Future<void> cancelRequest(String requestId) async {
@@ -158,7 +166,19 @@ class RequestService {
               .map(RequestModel.fromFirestore)
               .where((r) => r.status != RequestStatus.completed)
               .toList();
-          list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+          for (final r in list) {
+            debugPrint(
+              '[ActiveSort] "${r.title}" '
+              'joinedAt=${r.volunteerJoinedAt[volunteerId]} '
+              'updatedAt=${r.updatedAt}',
+            );
+          }
+          list.sort((a, b) {
+            final aTime = a.volunteerJoinedAt[volunteerId] ?? a.updatedAt;
+            final bTime = b.volunteerJoinedAt[volunteerId] ?? b.updatedAt;
+            return bTime.compareTo(aTime);
+          });
+          debugPrint('[ActiveSort] order after sort: ${list.map((r) => r.title).toList()}');
           return list;
         });
   }
@@ -166,7 +186,7 @@ class RequestService {
   Stream<List<RequestModel>> getOpenRequests() {
     return _db
         .collection('requests')
-        .where('status', isEqualTo: 'waiting')
+        .where('status', whereIn: ['waiting', 'assigned'])
         .snapshots()
         .map((snap) {
           final list = snap.docs.map(RequestModel.fromFirestore).toList();

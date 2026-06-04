@@ -293,17 +293,18 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
       physics: const ClampingScrollPhysics(),
       padding: const EdgeInsets.symmetric(vertical: 12),
       itemCount: msgs.length,
-      itemBuilder: (_, i) => _buildItem(msgs[i]),
+      itemBuilder: (_, i) => _buildItem(msgs[i], provider),
     );
   }
 
-  Widget _buildItem(MessageModel msg) {
+  Widget _buildItem(MessageModel msg, MessageProvider provider) {
+    final senderName = provider.senderNames[msg.senderId];
     return Padding(
       padding: const EdgeInsets.only(bottom: 4),
       child: MessageBubble(
         message: msg,
         currentUserId: widget.currentUserId,
-        senderName: widget.otherUserName,
+        senderName: senderName,
       ),
     );
   }

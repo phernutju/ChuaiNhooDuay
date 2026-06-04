@@ -8,6 +8,7 @@ import 'package:we_are_ready/models/request_model.dart';
 import 'package:we_are_ready/services/message_service.dart';
 import 'package:we_are_ready/services/notification_service.dart';
 import 'package:we_are_ready/services/request_service.dart';
+import 'package:we_are_ready/services/user_service.dart';
 
 /// Manages real-time message state for a single active request room.
 ///
@@ -17,15 +18,20 @@ class MessageProvider extends ChangeNotifier {
   final MessageService _messageService;
   final NotificationService _notificationService;
   final RequestService _requestService;
+  final UserService _userService;
 
   MessageProvider(
     this._messageService, {
     NotificationService? notificationService,
     RequestService? requestService,
+    UserService? userService,
   })  : _notificationService = notificationService ?? NotificationService(),
-        _requestService = requestService ?? RequestService();
+        _requestService = requestService ?? RequestService(),
+        _userService = userService ?? UserService();
 
   List<MessageModel> messages = [];
+  /// UID → display name cache, populated as messages arrive.
+  Map<String, String> senderNames = {};
   int unseenCount = 0;
   bool isSending = false;
   bool isLoading = false;
@@ -53,6 +59,7 @@ class MessageProvider extends ChangeNotifier {
         messages = incoming;
         isLoading = false;
         notifyListeners();
+        _loadSenderNames(incoming);
       },
       onError: (Object e) {
         error = e.toString();
@@ -279,6 +286,24 @@ class MessageProvider extends ChangeNotifier {
       // Best-effort — never let notification failure break messaging.
       debugPrint('[MessageProvider] chat notification failed: $e');
     }
+  }
+
+  /// Fetches user profiles for any sender UIDs not yet in [senderNames].
+  Future<void> _loadSenderNames(List<MessageModel> msgs) async {
+    final unknown = msgs
+        .map((m) => m.senderId)
+        .where((id) => id.isNotEmpty && !senderNames.containsKey(id))
+        .toSet();
+    if (unknown.isEmpty) return;
+    await Future.wait(unknown.map((id) async {
+      try {
+        final user = await _userService.getUser(id);
+        if (user?.name?.isNotEmpty == true) {
+          senderNames[id] = user!.name!;
+        }
+      } catch (_) {}
+    }));
+    notifyListeners();
   }
 
   /// Resolves the display name of [senderId] from [request] participant lists.
