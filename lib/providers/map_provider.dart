@@ -50,14 +50,17 @@ class MapProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  static const _fallbackCenter = LatLng(13.68, 100.55);
-
   void _recompute() {
-    final center = userLocation ?? _fallbackCenter;
+    if (userLocation == null) {
+      requestsInRadius = [];
+      return;
+    }
     requestsInRadius = openRequests.where((r) {
-      if (r.isFull) return false;
-      final point = LatLng(r.location.coordinates.latitude, r.location.coordinates.longitude);
-      return isWithinRadius(center, point, radiusKm);
+      final point = LatLng(
+        r.location.coordinates.latitude,
+        r.location.coordinates.longitude,
+      );
+      return isWithinRadius(userLocation!, point, radiusKm);
     }).toList();
   }
 
