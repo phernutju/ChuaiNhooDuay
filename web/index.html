@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html>
+
 <head>
   <!--
     If you are serving your web app in a path other than the root, change the
@@ -23,24 +24,38 @@
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="we_are_ready">
+  <meta name="apple-mobile-web-app-title" content="ChuayNooDuay">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
 
-  <title>we_are_ready</title>
+  <title>ChuayNooDuay</title>
   <link rel="manifest" href="manifest.json">
+
+  <!-- Hide the reCAPTCHA badge globally (Firebase Phone Auth on web). -->
+  <style>
+    .grecaptcha-badge {
+      visibility: hidden !important;
+    }
+  </style>
+
+  <!-- Firebase JS SDK must load before flutter_bootstrap.js -->
+  <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
+  <script>
+    firebase.initializeApp({
+      apiKey: "AIzaSyAl_QvpRmpgqJ0BIUUBl3Sw7N-HgIoOhWM",
+      authDomain: "chuaynooduay.firebaseapp.com",
+      projectId: "chuaynooduay",
+      storageBucket: "chuaynooduay.firebasestorage.app",
+      messagingSenderId: "1017324137334",
+      appId: "1:1017324137334:web:a66aacdeb415dcf0baa857"
+    });
+  </script>
 </head>
 <body>
-  <!--
-    You can customize the "flutter_bootstrap.js" script.
-    This is useful to provide a custom configuration to the Flutter loader
-    or to give the user feedback during the initialization process.
-
-    For more details:
-    * https://docs.flutter.dev/platform-integration/web/initialization
-  -->
+  <div id="recaptcha-container"></div>
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>

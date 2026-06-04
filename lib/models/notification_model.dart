@@ -88,6 +88,7 @@ class CivilianNotificationModel {
       'detail': detail,
       'type': _typeToString(type),
       'isRead': isRead,
+      'recipientType': 'civilian',
       'createdAt': Timestamp.fromDate(createdAt),
       'expiresAt': Timestamp.fromDate(expiresAt),
     };
@@ -182,6 +183,7 @@ class VolunteerNotificationModel {
       'type': _typeToString(type),
       'priority': priority,
       'isRead': isRead,
+      'recipientType': 'volunteer',
       'createdAt': Timestamp.fromDate(createdAt),
       'expiresAt': Timestamp.fromDate(expiresAt),
     };
@@ -327,6 +329,7 @@ class GlobalNotificationModel {
       'type': _typeToString(type),
       'priority': priority,
       'isRead': isRead,
+      'recipientType': 'global',
       if (metadata != null) 'metadata': metadata!.toMap(),
       'createdAt': Timestamp.fromDate(createdAt),
       'expiresAt': Timestamp.fromDate(expiresAt),

@@ -3,6 +3,16 @@ allprojects {
         google()
         mavenCentral()
     }
+
+    configurations.all {
+        resolutionStrategy {
+            force("com.google.guava:guava:32.1.3-android")
+            force("com.google.guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava")
+            force("com.google.j2objc:j2objc-annotations:2.8")
+            force("com.google.code.findbugs:jsr305:3.0.2")
+        }
+        exclude(group = "com.google.guava", module = "guava-jdk5")
+    }
 }
 
 val newBuildDir: Directory =

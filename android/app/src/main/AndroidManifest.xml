@@ -1,6 +1,19 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- geolocator: fine location for GPS fix; coarse as fallback -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <!-- local_auth: biometric unlock -->
+    <uses-permission android:name="android.permission.USE_BIOMETRIC" />
+    <!-- image_picker: camera capture -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <!-- image_picker: gallery access (Android 13+) -->
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    <!-- image_picker: gallery access (Android ≤ 12) -->
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="29" />
+
     <application
-        android:label="we_are_ready"
+        android:label="ChuayNooDuay"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
@@ -25,6 +38,14 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
+        <!-- Google Maps SDK API key.
+             Replace YOUR_API_KEY with a key from Google Cloud Console
+             (Maps SDK for Android must be enabled).
+             NOTE: android:minSdkVersion must be >= 21 in app/build.gradle. -->
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="${MAPS_API_KEY}" />
+
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data
