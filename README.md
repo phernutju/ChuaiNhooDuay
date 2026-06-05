@@ -38,7 +38,7 @@ Built with Flutter + Firebase. Targets Bangkok and Samut Prakan service area.
 - PIN / biometric app lock (per-device, stored securely)
 - Role selection on first login (Civilian or Volunteer)
 
-### Civilian (Requester)
+### Requester
 - Post help requests across 8 categories: Medical, Shelter, Water, Transport, Rescue, Evacuate, Supplies, Other
 - Set urgency level: **Critical**, **Urgent**, **General**
 - Auto-fetch or manually enter GPS location
