@@ -1,8 +1,6 @@
 # ChuaiNhooDuay
 
-**CRISIS NETWORK · ALWAYS ON**
-
-A disaster-response mobile app connecting civilians in need with nearby volunteers — real-time, location-aware, role-based.
+A disaster-response mobile app connecting requester in need with nearby volunteers — real-time, location-aware, role-based.
 
 ---
 
