@@ -145,7 +145,6 @@ MAPS_API_KEY=your_google_maps_api_key_here
 MAPS_API_KEY=your_google_maps_api_key_here
 ```
 
-Use the exact name `MAPS_API_KEY`. After editing, run `flutter run` again (full restart, not hot reload).
 ### 6. Run the app
 
 ```bash
