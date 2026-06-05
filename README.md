@@ -133,18 +133,19 @@ GOOGLE_MAPS_API_KEY=your_google_maps_api_key_here
 
 ### 5. Google Maps API key
 
-**Android** — add to `android/app/src/main/AndroidManifest.xml`:
-```xml
-<meta-data
-    android:name="com.google.android.geo.API_KEY"
-    android:value="YOUR_API_KEY"/>
+**Web** — create a `.env` file in the project root:
+
+```
+MAPS_API_KEY=your_google_maps_api_key_here
 ```
 
-**iOS** — add to `ios/Runner/AppDelegate.swift`:
-```swift
-GMSServices.provideAPIKey("YOUR_API_KEY")
+**Android** — add the same key to `android/local.properties`:
+
+```
+MAPS_API_KEY=your_google_maps_api_key_here
 ```
 
+Use the exact name `MAPS_API_KEY`. After editing, run `flutter run` again (full restart, not hot reload).
 ### 6. Run the app
 
 ```bash
