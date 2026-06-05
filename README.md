@@ -52,10 +52,11 @@ Built with Flutter + Firebase. Targets Bangkok and Samut Prakan service area.
 - Join requests and track active assignments
 - Check-in validation (must be within 100m of request location)
 - Receive notifications for new nearby requests
-- Role switching (can switch to Civilian and back)
+- Role switching (can switch to requester and back)
+- Chat
 
 ### Notifications
-- **Civilian notifications** — volunteer joined your request
+- **Requester notifications** — volunteer joined your request
 - **Volunteer notifications** — new request in your area
 - **Global notifications** — broadcast alerts, evacuation notices
 
