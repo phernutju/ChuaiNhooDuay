@@ -23,7 +23,7 @@ ChuaiNhooDuay supports two user roles:
 
 | Role | Description |
 |------|-------------|
-| **Civilian** | Post help requests (medical, shelter, rescue, etc.) and track volunteer responses |
+| **Requester** | Post help requests (medical, shelter, rescue, etc.) and track volunteer responses |
 | **Volunteer** | Browse nearby requests, join them, and check in on-site |
 
 Built with Flutter + Firebase. Targets Bangkok and Samut Prakan service area.
