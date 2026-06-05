@@ -1,4 +1,4 @@
-# ChuaiNhooDuay — ช่วยหน่อยด้วย
+# ChuaiNhooDuay
 
 **CRISIS NETWORK · ALWAYS ON**
 
